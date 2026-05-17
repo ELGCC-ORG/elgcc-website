@@ -273,6 +273,54 @@ function rotateWeekly(groups: SeriesGroup[], limit: number) {
   return rotated.slice(0, limit);
 }
 
+function SermonListItem({
+  sermon,
+  onPlay,
+}: {
+  sermon: IndexedSermon;
+  onPlay: (sermon: IndexedSermon) => void;
+}) {
+  const title = cleanSermonTitle(sermon);
+  const trackLabel = getTrackLabel(sermon.title);
+
+  return (
+    <div className="group flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] px-3 py-3 transition-all hover:border-primary/20 hover:bg-white/[0.04] sm:px-4">
+      {/* Play button */}
+      <button
+        type="button"
+        onClick={() => onPlay(sermon)}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary transition-all hover:bg-primary hover:text-dark active:scale-95"
+        aria-label={`Listen to ${title}`}
+      >
+        <PlayIcon className="ml-0.5 h-4 w-4" />
+      </button>
+
+      {/* Sermon info */}
+      <div className="min-w-0 flex-1">
+        <h4 className="text-sm font-semibold leading-snug text-white/90 line-clamp-2">{title}</h4>
+        <div className="mt-0.5 flex items-center gap-2">
+          {trackLabel && !/^track\s*\d+$/i.test(title.trim()) && (
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary/70">{trackLabel}</span>
+          )}
+          <span className="text-[10px] text-white/30">{sermon.speaker || DEFAULT_SPEAKER}</span>
+        </div>
+      </div>
+
+      {/* Download */}
+      <a
+        href={sermon.audioUrl}
+        download
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/5 text-white/30 transition-all hover:border-primary/30 hover:text-white/70 active:scale-95"
+        aria-label={`Download ${title}`}
+      >
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+      </a>
+    </div>
+  );
+}
+
 function LibrarySeriesRow({
   group,
   expanded,
@@ -284,44 +332,64 @@ function LibrarySeriesRow({
   onToggle: (key: string) => void;
   onPlay: (sermon: IndexedSermon) => void;
 }) {
-  const firstSermon = group.sermons[0];
-
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-dark-card">
+    <div className={`overflow-hidden rounded-2xl border transition-all duration-300 ${
+      expanded ? 'border-primary/30 bg-dark-card shadow-lg shadow-primary/5' : 'border-white/10 bg-dark-card hover:border-white/20'
+    }`}>
       <button
         type="button"
         onClick={() => onToggle(group.key)}
-        className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-4 p-4 text-left transition-colors hover:bg-white/[0.03] sm:p-5"
+        className="w-full text-left"
       >
-        <div className="hidden sm:block">
-          <SeriesArtwork sermon={firstSermon} compact />
-        </div>
-        <div className="min-w-0">
-          <div className="mb-2 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-primary/15 px-2.5 py-1 text-xs font-bold text-primary">{group.year}</span>
-            <span className="text-xs font-medium text-white/45">
-              {group.count} {group.count === 1 ? 'message' : 'messages'}
-            </span>
+        {/* Gradient accent strip — always visible, acts as visual identity for the series */}
+        <div className={`h-1.5 w-full bg-gradient-to-r ${getSeriesGradient(group.series)} ${expanded ? 'opacity-100' : 'opacity-60'} transition-opacity`} />
+
+        <div className="flex items-center gap-3 px-4 py-4 sm:gap-4 sm:px-5 sm:py-5">
+          {/* Series icon badge */}
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${getSeriesGradient(group.series)} shadow-lg`}>
+            <svg className="h-5 w-5 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
           </div>
-          <h3 className="text-xl font-bold leading-tight text-white">{group.displaySeries}</h3>
-          <p className="mt-2 text-sm text-white/50">Open series to listen, browse, or download messages.</p>
+
+          {/* Text content — takes full remaining width */}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary sm:px-2.5 sm:py-1 sm:text-xs">
+                {group.year}
+              </span>
+              <span className="text-[11px] font-medium text-white/40 sm:text-xs">
+                {group.count} {group.count === 1 ? 'message' : 'messages'}
+              </span>
+            </div>
+            <h3 className="mt-1.5 text-base font-bold leading-snug text-white sm:text-lg">{group.displaySeries}</h3>
+          </div>
+
+          {/* Expand/collapse chevron */}
+          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
+            expanded ? 'bg-primary/15 text-primary' : 'bg-white/5 text-white/40'
+          }`}>
+            <svg
+              className={`h-4 w-4 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
-        <svg
-          className={`h-6 w-6 shrink-0 text-white/60 transition-transform ${expanded ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
       </button>
 
       {expanded && (
-        <div className="border-t border-white/10 p-4 sm:p-5">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="border-t border-white/5 px-4 pb-4 pt-3 sm:px-5 sm:pb-5 sm:pt-4">
+          <p className="mb-4 text-xs text-white/40">
+            Tap any message to listen, or use the download button to save.
+          </p>
+          <div className="space-y-2.5">
             {group.sermons.map((sermon) => (
-              <TeachingCard key={sermon.id} sermon={sermon} onPlay={onPlay} />
+              <SermonListItem key={sermon.id} sermon={sermon} onPlay={onPlay} />
             ))}
           </div>
         </div>
