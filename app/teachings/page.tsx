@@ -101,10 +101,24 @@ function groupSermons(items: IndexedSermon[]) {
   });
 }
 
+function getSermonUpdatedTime(sermon: IndexedSermon) {
+  const timestamp = sermon.uploadedAt || sermon.date;
+  if (!timestamp) return 0;
+
+  const parsed = Date.parse(timestamp);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 function sortLatest(items: IndexedSermon[]) {
   return [...items].sort((a, b) => {
-    if (b.year !== a.year) return b.year - a.year;
-    return a.originalIndex - b.originalIndex;
+    const aTime = getSermonUpdatedTime(a);
+    const bTime = getSermonUpdatedTime(b);
+
+    if (aTime || bTime) {
+      if (bTime !== aTime) return bTime - aTime;
+    }
+
+    return b.originalIndex - a.originalIndex;
   });
 }
 
@@ -116,12 +130,12 @@ function PlayIcon({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
-function SectionHeader({ title, eyebrow }: { title: string; eyebrow: string }) {
+function SectionHeader({ title, eyebrow }: { title: string; eyebrow?: string }) {
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p className="text-primary text-xs font-bold uppercase tracking-[0.22em]">{eyebrow}</p>
-        <h2 className="text-2xl md:text-3xl font-bold text-white mt-2">{title}</h2>
+        {eyebrow && <p className="text-primary text-xs font-bold uppercase tracking-[0.22em]">{eyebrow}</p>}
+        <h2 className={`text-2xl md:text-3xl font-bold text-white ${eyebrow ? 'mt-2' : ''}`}>{title}</h2>
       </div>
     </div>
   );
@@ -131,24 +145,33 @@ function SeriesArtwork({ sermon, compact = false }: { sermon: Sermon; compact?: 
   const trackLabel = getTrackLabel(sermon.title);
 
   return (
-    <div className={`relative overflow-hidden rounded-lg bg-gradient-to-br ${getSeriesGradient(sermon.series)} ${compact ? 'h-24' : 'h-44'}`}>
-      <div className="absolute inset-0 bg-black/10" />
-      <div className="absolute left-3 top-3 rounded-full border border-white/20 bg-black/30 px-2.5 py-1 text-xs font-bold text-white/90">
+    <div className={`relative overflow-hidden ${compact ? 'h-24 rounded-lg' : 'h-48'} bg-gradient-to-br ${getSeriesGradient(sermon.series)}`}>
+      <div className="absolute top-3 left-3 z-20 bg-black/40 backdrop-blur-sm text-white/90 font-bold text-xs px-2.5 py-1 rounded-full border border-white/20">
         {sermon.year}
       </div>
       {trackLabel && (
-        <div className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/30 px-2.5 py-1 text-xs font-bold text-white/90">
+        <div className="absolute top-3 right-3 z-20 bg-black/40 backdrop-blur-sm text-white font-bold text-xs px-2.5 py-1 rounded-full border border-white/20">
           {trackLabel}
         </div>
       )}
-      <div className="absolute inset-x-4 bottom-4">
-        <p className="mb-2 w-fit rounded-full border border-white/20 bg-black/20 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white/80">
+      <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+        <div className="relative z-10 transform group-hover:scale-105 transition-transform duration-300 w-full">
+          <span className="text-white/60 text-[10px] font-bold tracking-widest uppercase mb-2 block border border-white/20 rounded-full px-2 py-0.5 w-fit mx-auto bg-black/10 backdrop-blur-sm">
           {cleanSeriesTitle(sermon.series, sermon.year)}
-        </p>
-        <h3 className={`${compact ? 'text-base' : 'text-xl'} font-bold leading-tight text-white`}>
-          {cleanSermonTitle(sermon)}
-        </h3>
+          </span>
+          <h3 className={`${compact ? 'text-base' : 'text-lg md:text-xl'} font-bold text-white mb-3 leading-tight shadow-sm line-clamp-3 px-2`}>
+            {normalizeText(sermon.title)}
+          </h3>
+          {!compact && (
+            <>
+              <div className="w-8 h-0.5 bg-white/40 mx-auto rounded-full mb-2" />
+              <p className="text-white/90 text-[10px] font-medium tracking-wide">{sermon.speaker || DEFAULT_SPEAKER}</p>
+            </>
+          )}
+        </div>
       </div>
+      <div className="absolute inset-0 bg-black/10" />
+      <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-white/5 rounded-full blur-xl" />
     </div>
   );
 }
@@ -162,13 +185,21 @@ function TeachingCard({
 }) {
   return (
     <article className="group overflow-hidden rounded-xl border border-white/10 bg-dark-card transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl hover:shadow-black/20">
-      <SeriesArtwork sermon={sermon} />
-      <div className="p-4">
-        <p className="text-white/45 text-xs font-medium">{sermon.speaker || DEFAULT_SPEAKER}</p>
-        <h3 className="mt-2 min-h-[3.5rem] text-lg font-bold leading-tight text-white">
-          {cleanSermonTitle(sermon)}
-        </h3>
-        <div className="mt-4 flex gap-2">
+      <div className="relative">
+        <SeriesArtwork sermon={sermon} />
+        <button
+          type="button"
+          onClick={() => onPlay(sermon)}
+          className="absolute inset-0 z-20 flex items-center justify-center bg-dark/40 opacity-0 backdrop-blur-[1px] transition-opacity duration-300 group-hover:opacity-100"
+          aria-label={`Listen to ${cleanSermonTitle(sermon)}`}
+        >
+          <span className="flex w-14 h-14 scale-50 items-center justify-center rounded-full bg-primary text-dark shadow-lg transition-all duration-300 group-hover:scale-100 hover:bg-white hover:text-primary">
+            <PlayIcon className="w-6 h-6 ml-0.5" />
+          </span>
+        </button>
+      </div>
+      <div className="p-4 bg-dark-lighter">
+        <div className="flex gap-2">
           <button
             type="button"
             onClick={() => onPlay(sermon)}
@@ -225,6 +256,21 @@ function PopularSeriesCard({
       </p>
     </button>
   );
+}
+
+function getWeekNumber(date: Date) {
+  const start = new Date(date.getFullYear(), 0, 1);
+  const dayOffset = Math.floor((date.getTime() - start.getTime()) / 86400000);
+  return Math.floor((dayOffset + start.getDay()) / 7);
+}
+
+function rotateWeekly(groups: SeriesGroup[], limit: number) {
+  if (groups.length <= limit) return groups;
+
+  const week = getWeekNumber(new Date());
+  const start = week % groups.length;
+  const rotated = [...groups.slice(start), ...groups.slice(0, start)];
+  return rotated.slice(0, limit);
 }
 
 function LibrarySeriesRow({
@@ -372,7 +418,13 @@ export default function TeachingsPage() {
 
   const seriesGroups = useMemo(() => groupSermons(filteredSermons), [filteredSermons]);
   const latestTeachings = useMemo(() => sortLatest(filteredSermons).slice(0, 6), [filteredSermons]);
-  const popularSeries = useMemo(() => [...seriesGroups].sort((a, b) => b.count - a.count || b.year - a.year).slice(0, 6), [seriesGroups]);
+  const popularSeries = useMemo(() => {
+    const strongestSeries = [...seriesGroups]
+      .sort((a, b) => b.count - a.count || b.year - a.year)
+      .slice(0, 24);
+
+    return rotateWeekly(strongestSeries, 6);
+  }, [seriesGroups]);
 
   const toggleSeries = (key: string) => {
     setExpandedSeries((current) => {
@@ -471,7 +523,7 @@ export default function TeachingsPage() {
 
         {popularSeries.length > 0 && (
           <section>
-            <SectionHeader eyebrow="Deep collections" title="Popular Series" />
+            <SectionHeader title="Popular Series" />
             <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {popularSeries.map((group) => (
                 <PopularSeriesCard
