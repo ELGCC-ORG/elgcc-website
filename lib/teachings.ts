@@ -68,6 +68,14 @@ export function getAudioType(audioUrl: string) {
   return 'audio/mpeg';
 }
 
+export function getBrandedListenPath(sermonId: string) {
+  return `/listen/${encodeURIComponent(sermonId)}`;
+}
+
+export function getBrandedListenUrl(sermonId: string, origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternallifegcc.com') {
+  return `${origin.replace(/\/$/, '')}${getBrandedListenPath(sermonId)}`;
+}
+
 export function getArchiveFileName(audioUrl: string) {
   try {
     const url = new URL(audioUrl);

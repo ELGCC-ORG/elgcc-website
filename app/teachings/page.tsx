@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { DEFAULT_SPEAKER, Sermon, getAudioType, sermons } from '@/lib/teachings';
+import { DEFAULT_SPEAKER, Sermon, getAudioType, getBrandedListenPath, sermons } from '@/lib/teachings';
 
 type IndexedSermon = Sermon & { originalIndex: number };
 
@@ -130,6 +130,23 @@ function PlayIcon({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
+function CopyIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 8h10a2 2 0 012 2v8a2 2 0 01-2 2H8a2 2 0 01-2-2v-8a2 2 0 012-2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" />
+    </svg>
+  );
+}
+
+function DownloadIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    </svg>
+  );
+}
+
 function SectionHeader({ title, eyebrow }: { title: string; eyebrow?: string }) {
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -179,9 +196,13 @@ function SeriesArtwork({ sermon, compact = false }: { sermon: Sermon; compact?: 
 function TeachingCard({
   sermon,
   onPlay,
+  onCopy,
+  copied,
 }: {
   sermon: IndexedSermon;
   onPlay: (sermon: IndexedSermon) => void;
+  onCopy: (sermon: IndexedSermon) => void;
+  copied: boolean;
 }) {
   return (
     <article className="group overflow-hidden rounded-xl border border-white/10 bg-dark-card transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl hover:shadow-black/20">
@@ -214,10 +235,17 @@ function TeachingCard({
             className="inline-flex items-center justify-center rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold text-white/70 transition-colors hover:border-primary/40 hover:text-white"
             aria-label={`Download ${cleanSermonTitle(sermon)}`}
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
+            <DownloadIcon />
           </a>
+          <button
+            type="button"
+            onClick={() => onCopy(sermon)}
+            className="inline-flex items-center justify-center rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold text-white/70 transition-colors hover:border-primary/40 hover:text-white"
+            aria-label={`Copy branded link for ${cleanSermonTitle(sermon)}`}
+            title={copied ? 'Copied' : 'Copy link'}
+          >
+            {copied ? <span className="text-xs font-bold text-primary">Copied</span> : <CopyIcon />}
+          </button>
         </div>
       </div>
     </article>
@@ -276,9 +304,13 @@ function rotateWeekly(groups: SeriesGroup[], limit: number) {
 function SermonListItem({
   sermon,
   onPlay,
+  onCopy,
+  copied,
 }: {
   sermon: IndexedSermon;
   onPlay: (sermon: IndexedSermon) => void;
+  onCopy: (sermon: IndexedSermon) => void;
+  copied: boolean;
 }) {
   const title = cleanSermonTitle(sermon);
   const trackLabel = getTrackLabel(sermon.title);
@@ -313,10 +345,17 @@ function SermonListItem({
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/5 text-white/30 transition-all hover:border-primary/30 hover:text-white/70 active:scale-95"
         aria-label={`Download ${title}`}
       >
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
+        <DownloadIcon />
       </a>
+      <button
+        type="button"
+        onClick={() => onCopy(sermon)}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/5 text-white/30 transition-all hover:border-primary/30 hover:text-white/70 active:scale-95"
+        aria-label={`Copy branded link for ${title}`}
+        title={copied ? 'Copied' : 'Copy link'}
+      >
+        {copied ? <span className="text-[10px] font-bold text-primary">OK</span> : <CopyIcon className="h-4 w-4" />}
+      </button>
     </div>
   );
 }
@@ -326,11 +365,15 @@ function LibrarySeriesRow({
   expanded,
   onToggle,
   onPlay,
+  onCopy,
+  copiedSermonId,
 }: {
   group: SeriesGroup;
   expanded: boolean;
   onToggle: (key: string) => void;
   onPlay: (sermon: IndexedSermon) => void;
+  onCopy: (sermon: IndexedSermon) => void;
+  copiedSermonId: string | null;
 }) {
   return (
     <div className={`overflow-hidden rounded-2xl border transition-all duration-300 ${
@@ -389,7 +432,13 @@ function LibrarySeriesRow({
           </p>
           <div className="space-y-2.5">
             {group.sermons.map((sermon) => (
-              <SermonListItem key={sermon.id} sermon={sermon} onPlay={onPlay} />
+              <SermonListItem
+                key={sermon.id}
+                sermon={sermon}
+                onPlay={onPlay}
+                onCopy={onCopy}
+                copied={copiedSermonId === sermon.id}
+              />
             ))}
           </div>
         </div>
@@ -401,9 +450,13 @@ function LibrarySeriesRow({
 function StickyPlayer({
   sermon,
   onClose,
+  onCopy,
+  copied,
 }: {
   sermon: IndexedSermon | null;
   onClose: () => void;
+  onCopy: (sermon: IndexedSermon) => void;
+  copied: boolean;
 }) {
   if (!sermon) {
     return null;
@@ -435,6 +488,13 @@ function StickyPlayer({
           </a>
           <button
             type="button"
+            onClick={() => onCopy(sermon)}
+            className="rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold text-white/70 transition-colors hover:border-primary/40 hover:text-white"
+          >
+            {copied ? 'Copied' : 'Copy Link'}
+          </button>
+          <button
+            type="button"
             onClick={onClose}
             className="rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold text-white/70 transition-colors hover:border-primary/40 hover:text-white"
           >
@@ -451,6 +511,7 @@ export default function TeachingsPage() {
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
   const [activeSermon, setActiveSermon] = useState<IndexedSermon | null>(null);
+  const [copiedSermonId, setCopiedSermonId] = useState<string | null>(null);
 
   const indexedSermons = useMemo<IndexedSermon[]>(
     () => sermons.map((sermon, originalIndex) => ({ ...sermon, originalIndex })),
@@ -509,6 +570,19 @@ export default function TeachingsPage() {
   const openSeries = (key: string) => {
     setExpandedSeries((current) => new Set(current).add(key));
     document.getElementById('teaching-library')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const copyBrandedLink = async (sermon: IndexedSermon) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://eternallifegcc.com';
+    const brandedLink = `${origin}${getBrandedListenPath(sermon.id)}`;
+
+    try {
+      await navigator.clipboard.writeText(brandedLink);
+      setCopiedSermonId(sermon.id);
+      window.setTimeout(() => setCopiedSermonId((current) => (current === sermon.id ? null : current)), 1800);
+    } catch {
+      window.prompt('Copy this ELGCC teaching link:', brandedLink);
+    }
   };
 
   return (
@@ -583,7 +657,13 @@ export default function TeachingsPage() {
             <SectionHeader eyebrow="Start here" title="Latest Teachings" />
             <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {latestTeachings.map((sermon) => (
-                <TeachingCard key={sermon.id} sermon={sermon} onPlay={setActiveSermon} />
+                <TeachingCard
+                  key={sermon.id}
+                  sermon={sermon}
+                  onPlay={setActiveSermon}
+                  onCopy={copyBrandedLink}
+                  copied={copiedSermonId === sermon.id}
+                />
               ))}
             </div>
           </section>
@@ -615,6 +695,8 @@ export default function TeachingsPage() {
                 expanded={expandedSeries.has(group.key)}
                 onToggle={toggleSeries}
                 onPlay={setActiveSermon}
+                onCopy={copyBrandedLink}
+                copiedSermonId={copiedSermonId}
               />
             ))}
           </div>
@@ -628,7 +710,12 @@ export default function TeachingsPage() {
         )}
       </main>
 
-      <StickyPlayer sermon={activeSermon} onClose={() => setActiveSermon(null)} />
+      <StickyPlayer
+        sermon={activeSermon}
+        onClose={() => setActiveSermon(null)}
+        onCopy={copyBrandedLink}
+        copied={Boolean(activeSermon && copiedSermonId === activeSermon.id)}
+      />
     </div>
   );
 }
