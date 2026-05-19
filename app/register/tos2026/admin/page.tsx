@@ -108,8 +108,8 @@ export default function AdminDashboard() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0F1A0A] via-[#1A1A1A] to-[#0A0A0A] flex items-center justify-center p-4">
-        <div className="tos-card rounded-2xl p-8 w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-[#0F1A0A] via-[#1A1A1A] to-[#0A0A0A] flex items-center justify-center pt-28 pb-16 p-4">
+        <div className="tos-admin-card rounded-2xl p-8 w-full max-w-md">
           <div className="text-center mb-8">
             <span className="text-4xl mb-4 block">🔒</span>
             <h1 className="text-2xl font-bold text-white mb-2">Admin Access</h1>
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
                 placeholder="Enter password..."
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="tos-input w-full text-center tracking-widest"
+                className="tos-admin-input w-full text-center tracking-widest"
               />
             </div>
             {error && <p className="text-red-400 text-sm text-center">{error}</p>}
@@ -158,7 +158,7 @@ export default function AdminDashboard() {
   }).sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime());
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0F1A0A] via-[#1A1A1A] to-[#0A0A0A] py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#0F1A0A] via-[#1A1A1A] to-[#0A0A0A] pt-32 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header */}
@@ -170,7 +170,7 @@ export default function AdminDashboard() {
             <p className="text-white/50 mt-1">Manage registrations and payments</p>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={fetchRegistrations} className="tos-btn-secondary py-2 text-sm">
+            <button onClick={fetchRegistrations} className="tos-btn-secondary py-2 text-sm bg-transparent hover:bg-white/5 border-white/20 text-white/80">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
@@ -184,39 +184,39 @@ export default function AdminDashboard() {
             </button>
           </div>
         </div>
-
+ 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="tos-card rounded-2xl p-6 border-l-4 border-l-[#60A5FA]">
+          <div className="tos-admin-card rounded-2xl p-6 border-l-4 border-l-[#60A5FA]">
             <p className="text-white/50 text-sm font-medium mb-1">Total Groups</p>
             <p className="text-3xl font-bold text-white">{totalRegistrations}</p>
           </div>
-          <div className="tos-card rounded-2xl p-6 border-l-4 border-l-[#A78BFA]">
+          <div className="tos-admin-card rounded-2xl p-6 border-l-4 border-l-[#A78BFA]">
             <p className="text-white/50 text-sm font-medium mb-1">Total Attendees</p>
             <p className="text-3xl font-bold text-white">{totalAttendees}</p>
           </div>
-          <div className="tos-card rounded-2xl p-6 border-l-4 border-l-[#D4A843]">
+          <div className="tos-admin-card rounded-2xl p-6 border-l-4 border-l-[#D4A843]">
             <p className="text-white/50 text-sm font-medium mb-1">Total Expected Revenue</p>
             <p className="text-3xl font-bold text-[#D4A843]">{formatPrice(totalRevenue)}</p>
           </div>
         </div>
-
+ 
         {/* Filters */}
-        <div className="tos-card rounded-2xl p-4 flex flex-col md:flex-row gap-4">
+        <div className="tos-admin-card rounded-2xl p-4 flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <input
               type="text"
               placeholder="Search by name, church, or ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="tos-input w-full"
+              className="tos-admin-input w-full"
             />
           </div>
           <div className="w-full md:w-48">
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="tos-input tos-select w-full"
+              className="tos-admin-input tos-admin-select w-full"
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -229,12 +229,12 @@ export default function AdminDashboard() {
         {/* Registrations List */}
         <div className="space-y-4">
           {filteredRegistrations.length === 0 ? (
-            <div className="tos-card rounded-2xl p-12 text-center">
+            <div className="tos-admin-card rounded-2xl p-12 text-center">
               <p className="text-white/40">No registrations found.</p>
             </div>
           ) : (
             filteredRegistrations.map((reg) => (
-              <div key={reg.registrationId} className="tos-card rounded-2xl p-5 md:p-6 overflow-hidden">
+              <div key={reg.registrationId} className="tos-admin-card rounded-2xl p-5 md:p-6 overflow-hidden">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 border-b border-white/10 pb-4">
                   <div>
                     <div className="flex items-center gap-3 mb-1">

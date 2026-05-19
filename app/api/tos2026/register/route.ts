@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateRegistrationId, calculatePriceBreakdown } from '@/lib/tos2026/pricing';
 import { Attendee, CoordinatorInfo, Registration, RegistrationType } from '@/lib/tos2026/types';
 
-import { appendToGoogleSheet } from '@/lib/tos2026/sheets';
+import { appendToGoogleSheet, getAllRegistrationsFromGoogleSheet } from '@/lib/tos2026/sheets';
 import { sendConfirmationEmail } from '@/lib/tos2026/email';
 import { saveLocalRegistration, getLocalRegistrations } from '@/lib/tos2026/registrations';
 import {
@@ -145,9 +145,46 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const data = getLocalRegistrations();
+    // Fetch local and Google Sheet registrations
+    const localData = getLocalRegistrations();
+    let sheetsData: Registration[] = [];
+    
+    try {
+      sheetsData = await getAllRegistrationsFromGoogleSheet();
+    } catch (sheetErr) {
+      console.error('Error fetching from Google Sheets in admin GET:', sheetErr);
+    }
+
+    // Merge both sources (deduplicating by registrationId, preferring paid/completed status)
+    const mergedMap = new Map<string, Registration>();
+    
+    // First put sheets data (primary persistent store)
+    for (const reg of sheetsData) {
+      mergedMap.set(reg.registrationId, reg);
+    }
+    
+    // Then merge local data (if local data has a different/newer state, or if sheets lacks it)
+    for (const reg of localData) {
+      const existing = mergedMap.get(reg.registrationId);
+      if (!existing) {
+        mergedMap.set(reg.registrationId, reg);
+      } else {
+        // If local is paid but sheet is pending, prefer the local
+        if (reg.paymentStatus === 'paid' && existing.paymentStatus !== 'paid') {
+          mergedMap.set(reg.registrationId, {
+            ...existing,
+            paymentStatus: 'paid',
+            paidAt: reg.paidAt || existing.paidAt || new Date().toISOString(),
+            flutterwaveTransactionId: reg.flutterwaveTransactionId || existing.flutterwaveTransactionId,
+          });
+        }
+      }
+    }
+
+    const data = Array.from(mergedMap.values());
     return NextResponse.json({ success: true, registrations: data });
-  } catch {
+  } catch (error) {
+    console.error('Failed to get registrations:', error);
     return NextResponse.json({ success: true, registrations: [] });
   }
 }

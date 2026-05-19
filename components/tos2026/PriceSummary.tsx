@@ -81,15 +81,15 @@ export default function PriceSummary({
             </span>
           </div>
 
-          <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
-            <p className="text-amber-900 text-xs leading-relaxed">
-              Payments are processed securely through Flutterwave. If you choose Bank Transfer,
-              your bank app may display TriumphantTech after you enter the Indulge MFB account
-              details. This is due to the payment processor account. Please continue only if the
-              Flutterwave checkout page shows ELGCC Training of the Spirit 2026, and pay the exact
-              amount displayed. You will receive confirmation after payment.
-            </p>
-          </div>
+          {total > 0 && (
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
+              <p className="text-slate-500 text-xs leading-relaxed">
+                A small processing fee of <span className="font-semibold text-slate-700">2%</span> will
+                be added by Flutterwave at checkout. For example, a ₦10,000 registration
+                will have a ₦200 fee, making the total ₦10,200.
+              </p>
+            </div>
+          )}
 
           {/* CTA Button */}
           <button

@@ -2,18 +2,34 @@ import { AttendeeCategory, CategoryConfig, Attendee } from './types';
 
 export const CATEGORIES: CategoryConfig[] = [
   {
+    id: 'toddler',
+    label: 'Toddler',
+    ageRange: '0 – 5 years',
+    price: 100, // TODO: restore to 5000 after testing
+    color: '#34D399',
+    icon: '👶',
+  },
+  {
     id: 'child',
     label: 'Child',
-    ageRange: '6 – 15 years',
-    price: 100, // TODO: restore to 5000 after testing
+    ageRange: '6 – 12 years',
+    price: 7500,
     color: '#60A5FA',
     icon: '👦',
   },
   {
-    id: 'student',
-    label: 'Undergraduate Student',
-    ageRange: 'Above 15 years',
-    price: 12000,
+    id: 'secondary',
+    label: 'Secondary School Student',
+    ageRange: 'Secondary School',
+    price: 10000,
+    color: '#F472B6',
+    icon: '🎒',
+  },
+  {
+    id: 'undergraduate',
+    label: 'Undergraduate',
+    ageRange: 'Tertiary Institution',
+    price: 15000,
     color: '#A78BFA',
     icon: '🎓',
   },
@@ -21,7 +37,7 @@ export const CATEGORIES: CategoryConfig[] = [
     id: 'working_class',
     label: 'Working Class',
     ageRange: 'Adults',
-    price: 20000,
+    price: 25000,
     color: '#D4A843',
     icon: '💼',
   },

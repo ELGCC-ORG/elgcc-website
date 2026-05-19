@@ -190,7 +190,7 @@ export default function AttendeeCard({
         {/* Email */}
         <div>
           <label className="tos-label">
-            Email Address {attendee.category === 'child' ? '(optional)' : '*'}
+            Email Address {attendee.category === 'toddler' || attendee.category === 'child' ? '(optional)' : '*'}
           </label>
           <input
             type="email"

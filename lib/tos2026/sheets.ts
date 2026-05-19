@@ -243,3 +243,82 @@ export async function getRegistrationFromGoogleSheet(registrationId: string): Pr
     return null;
   }
 }
+
+export async function getAllRegistrationsFromGoogleSheet(): Promise<Registration[]> {
+  try {
+    const sheet = await getRegistrationsSheet();
+
+    if (!sheet) {
+      return [];
+    }
+
+    const rows = await sheet.getRows<RegistrationSheetRow>();
+    const registrationMap = new Map<string, Registration>();
+
+    for (const row of rows) {
+      const regId = String(row.get('Registration ID') || '').trim();
+      if (!regId) continue;
+
+      const categoryStr = String(row.get('Attendee Category') || '').trim().toLowerCase().replace(/\s+/g, '_');
+      // Normalize category (e.g., student, undergraduate, toddler, child, working_class)
+      let category: Registration['attendees'][number]['category'] = 'working_class';
+      if (categoryStr === 'toddler' || categoryStr === 'child' || categoryStr === 'secondary' || categoryStr === 'undergraduate' || categoryStr === 'working_class') {
+        category = categoryStr;
+      } else if (categoryStr === 'student' || categoryStr === 'undergraduate_student') {
+        category = 'undergraduate';
+      }
+
+      const attendee = {
+        id: `${regId}-${registrationMap.get(regId)?.attendees.length || 0}`,
+        fullName: String(row.get('Attendee Name') || ''),
+        gender: (row.get('Attendee Gender') === 'Female' ? 'Female' : 'Male') as 'Male' | 'Female',
+        category,
+        phoneNumber: String(row.get('Attendee Phone') || ''),
+        emailAddress: String(row.get('Attendee Email') || ''),
+        region: (row.get('Attendee Region') || 'Southern Nigeria') as Registration['attendees'][number]['region'],
+        localChurch: String(row.get('Attendee Local Church') || ''),
+        medicalConditions: String(row.get('Medical Conditions') || ''),
+      };
+
+      if (registrationMap.has(regId)) {
+        registrationMap.get(regId)!.attendees.push(attendee);
+      } else {
+        const dateStr = String(row.get('Date') || '');
+        let registeredAt = new Date().toISOString();
+        if (dateStr) {
+          try {
+            const parsed = new Date(dateStr);
+            if (!isNaN(parsed.getTime())) {
+              registeredAt = parsed.toISOString();
+            }
+          } catch {}
+        }
+
+        registrationMap.set(regId, {
+          registrationId: regId,
+          registrationType: String(row.get('Registration Type') || '').toLowerCase().includes('group') ? 'group' : 'individual',
+          coordinator: {
+            fullName: String(row.get('Coordinator Name') || ''),
+            phoneNumber: String(row.get('Coordinator Phone') || ''),
+            emailAddress: String(row.get('Coordinator Email') || ''),
+            churchName: String(row.get('Coordinator Church') || ''),
+          },
+          attendees: [attendee],
+          totalAmount: Number(row.get('Total Amount') || 0),
+          paymentStatus: (row.get('Payment Status') || 'pending') as Registration['paymentStatus'],
+          paymentReference: String(row.get('Payment Reference') || regId),
+          flutterwaveTransactionId: String(row.get('Flutterwave Transaction ID') || ''),
+          paymentProvider: row.get('Payment Provider') === 'flutterwave' ? 'flutterwave' : undefined,
+          registeredAt,
+          paidAt: String(row.get('Paid At') || '') || undefined,
+        });
+      }
+    }
+
+    return Array.from(registrationMap.values());
+  } catch (error) {
+    console.error('Failed to read all registrations from Google Sheets:', error);
+    return [];
+  }
+}
+

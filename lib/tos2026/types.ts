@@ -2,7 +2,7 @@
 // Training of the Spirit 2026 - Type Definitions
 // ============================================
 
-export type AttendeeCategory = 'child' | 'student' | 'working_class';
+export type AttendeeCategory = 'toddler' | 'child' | 'secondary' | 'undergraduate' | 'working_class';
 
 export type Gender = 'Male' | 'Female';
 
