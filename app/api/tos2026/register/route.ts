@@ -184,18 +184,13 @@ export async function GET(req: NextRequest) {
     const data = Array.from(mergedMap.values());
     return NextResponse.json({
       success: true,
-      registrations: data,
-      debug: {
-        localCount: localData ? localData.length : 0,
-        sheetsCount: sheetsData ? sheetsData.length : 0,
-      }
+      registrations: data
     });
   } catch (error) {
     console.error('Failed to get registrations:', error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
+      error: error instanceof Error ? error.message : 'Internal server error',
       registrations: []
     });
   }
