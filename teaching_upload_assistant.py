@@ -98,6 +98,36 @@ def load_sermons():
     return json.loads(SERMONS_FILE.read_text(encoding="utf-8"))
 
 
+def available_series_from_sermons(sermons):
+    series_by_key = {}
+    for sermon in sermons:
+        series = normalize_text(sermon.get("series"))
+        if not series:
+            continue
+
+        try:
+            year = int(sermon.get("year", 0))
+        except (TypeError, ValueError):
+            year = 0
+
+        key = series.lower()
+        current = series_by_key.get(key)
+        if not current or year > current[1]:
+            series_by_key[key] = (series, year)
+
+    return [
+        series
+        for series, _year in sorted(
+            series_by_key.values(),
+            key=lambda item: (-item[1], item[0].lower()),
+        )
+    ]
+
+
+def load_existing_series():
+    return available_series_from_sermons(load_sermons())
+
+
 def write_sermons(sermons):
     SERMONS_FILE.write_text(json.dumps(sermons, indent=2) + "\n", encoding="utf-8")
 
@@ -143,6 +173,7 @@ class TeachingUploadAssistant:
         self.password_var = StringVar(value="")
         self.allow_push_var = StringVar(value="0")
         self.status_var = StringVar(value="Choose audio files to begin.")
+        self.series_options = load_existing_series()
         self.uploading = False
 
         self.expected_password = os.environ.get("TEACHING_UPLOADER_PASSWORD", "")
@@ -168,7 +199,9 @@ class TeachingUploadAssistant:
         Entry(top, textvariable=self.year_var, width=10).grid(row=1, column=0, sticky=W, padx=(0, 12))
 
         Label(top, text="Series").grid(row=0, column=1, sticky=W)
-        Entry(top, textvariable=self.series_var, width=42).grid(row=1, column=1, sticky=W, padx=(0, 12))
+        self.series_combo = ttk.Combobox(top, textvariable=self.series_var, values=self.series_options, width=40)
+        self.series_combo.grid(row=1, column=1, sticky=W, padx=(0, 12))
+        self.series_combo.bind("<Button-1>", lambda _event: self.refresh_series_options(silent=True))
 
         Label(top, text="Speaker").grid(row=0, column=2, sticky=W)
         Entry(top, textvariable=self.speaker_var, width=34).grid(row=1, column=2, sticky=W, padx=(0, 12))
@@ -185,6 +218,7 @@ class TeachingUploadAssistant:
         Button(actions, text="Edit Selected", command=self.edit_selected).pack(side=LEFT, padx=(0, 8))
         Button(actions, text="Remove Selected", command=self.remove_selected).pack(side=LEFT, padx=(0, 8))
         Button(actions, text="Clear", command=self.clear_entries).pack(side=LEFT, padx=(0, 8))
+        Button(actions, text="Refresh Series", command=self.refresh_series_options).pack(side=LEFT, padx=(0, 8))
 
         if self.allow_push:
             Checkbutton(actions, text="Commit and push after validation", variable=self.allow_push_var, onvalue="1", offvalue="0").pack(side=RIGHT)
@@ -215,6 +249,13 @@ class TeachingUploadAssistant:
         self.status_label.pack(side=LEFT, fill=X, expand=True)
         Button(bottom, text="Validate Data", command=self.validate_data).pack(side=RIGHT, padx=(8, 0))
         Button(bottom, text="Upload and Update Website", command=self.start_upload).pack(side=RIGHT)
+
+    def refresh_series_options(self, silent=False):
+        self.series_options = load_existing_series()
+        if hasattr(self, "series_combo"):
+            self.series_combo.configure(values=self.series_options)
+        if not silent:
+            self.status_var.set(f"Loaded {len(self.series_options)} website series.")
 
     def choose_files(self):
         paths = filedialog.askopenfilenames(
@@ -299,7 +340,10 @@ class TeachingUploadAssistant:
             ("Speaker", speaker_var),
         ]):
             Label(form, text=label).grid(row=row, column=0, sticky=W, pady=6)
-            Entry(form, textvariable=var, width=54).grid(row=row, column=1, sticky=W, pady=6)
+            if label == "Series":
+                ttk.Combobox(form, textvariable=var, values=self.series_options, width=52).grid(row=row, column=1, sticky=W, pady=6)
+            else:
+                Entry(form, textvariable=var, width=54).grid(row=row, column=1, sticky=W, pady=6)
 
         def save():
             try:
@@ -437,6 +481,7 @@ class TeachingUploadAssistant:
             if drafts:
                 self.set_status("Updating website teaching data...")
                 write_sermons(existing + drafts)
+                self.root.after(0, lambda: self.refresh_series_options(silent=True))
                 wrote_data = True
 
             self.set_status("Checking website teaching data...")

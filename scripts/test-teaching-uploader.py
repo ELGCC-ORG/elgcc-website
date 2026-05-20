@@ -41,6 +41,20 @@ def run():
     unique_id = uploader.unique_sermon_id(existing, 2026, "Believers Authority", "Believers Authority Track 4")
     check(unique_id.endswith("-2"), "Unique ID suffixing failed.")
 
+    series_options = uploader.available_series_from_sermons(
+        [
+            {"series": " General Teachings ", "year": 2018},
+            {"series": "Open Doors", "year": 2025},
+            {"series": "Open Doors", "year": 2026},
+            {"series": "Believers Authority", "year": 2026},
+            {"series": "", "year": 2026},
+        ]
+    )
+    check(
+        series_options == ["Believers Authority", "Open Doors", "General Teachings"],
+        "Existing series dropdown options failed.",
+    )
+
     print("Teaching uploader checks passed.")
 
 
