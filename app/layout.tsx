@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import TOS2026Popup from "@/components/tos2026/TOS2026Popup";
 
 const inter = Inter({
     subsets: ["latin"],
@@ -28,6 +29,7 @@ export default function RootLayout({
         <html lang="en" className={inter.variable}>
             <body className="antialiased">
                 <Navigation />
+                <TOS2026Popup />
                 <main>{children}</main>
                 <Footer />
             </body>

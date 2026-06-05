@@ -9,6 +9,7 @@ export default function Navigation() {
     const navLinks = [
         { name: 'HOME', href: '/' },
         { name: 'ABOUT', href: '#about' },
+        { name: 'TOS 2026', href: '/register/tos2026', highlight: true },
         { name: 'TEACHINGS', href: '/teachings' },
         { name: 'SPECIAL PROGRAMMES', href: '/programmes' },
         { name: 'LOCATIONS', href: '/locations' },
@@ -30,15 +31,20 @@ export default function Navigation() {
                             />
                         </div>
                     </Link>
-
+ 
                     {/* Desktop Navigation */}
                     <div className="hidden md:flex items-center space-x-8">
                         {navLinks.map((link) => (
                             <Link
                                 key={link.name}
                                 href={link.href}
-                                className="text-sm font-medium text-white/80 hover:text-primary transition-colors duration-300 tracking-wide"
+                                className={
+                                    link.highlight
+                                        ? "text-sm font-semibold text-[#D4A843] hover:text-[#F0D78C] transition-colors duration-300 tracking-wide flex items-center gap-1"
+                                        : "text-sm font-medium text-white/80 hover:text-primary transition-colors duration-300 tracking-wide"
+                                }
                             >
+                                {link.highlight && <span className="animate-pulse">🔥</span>}
                                 {link.name}
                             </Link>
                         ))}
@@ -91,8 +97,13 @@ export default function Navigation() {
                                     key={link.name}
                                     href={link.href}
                                     onClick={() => setIsMenuOpen(false)}
-                                    className="text-sm font-medium text-white/80 hover:text-primary transition-colors duration-300 tracking-wide"
+                                    className={
+                                        link.highlight
+                                            ? "text-sm font-semibold text-[#D4A843] hover:text-[#F0D78C] transition-colors duration-300 tracking-wide flex items-center gap-1"
+                                            : "text-sm font-medium text-white/80 hover:text-primary transition-colors duration-300 tracking-wide"
+                                    }
                                 >
+                                    {link.highlight && <span className="animate-pulse">🔥</span>}
                                     {link.name}
                                 </Link>
                             ))}
