@@ -22,26 +22,26 @@ export default function Navigation() {
             <div className="container-custom">
                 <div className="flex items-center justify-between h-20">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-3">
-                        <div className="bg-primary-light rounded-lg overflow-hidden">
+                    <Link href="/" className="flex items-center gap-3 shrink-0">
+                        <div className="bg-primary-light rounded-lg overflow-hidden p-1.5 flex items-center justify-center">
                             <img
                                 src="/images/elgcc-logo1.png"
                                 alt="ELGCC - Eternal Life Global Community Church"
-                                className="h-20 w-auto"
+                                className="h-10 sm:h-12 lg:h-14 w-auto object-contain"
                             />
                         </div>
                     </Link>
  
                     {/* Desktop Navigation */}
-                    <div className="hidden md:flex items-center space-x-8">
+                    <div className="hidden lg:flex items-center lg:space-x-4 xl:space-x-6 2xl:space-x-8">
                         {navLinks.map((link) => (
                             <Link
                                 key={link.name}
                                 href={link.href}
                                 className={
                                     link.highlight
-                                        ? "text-sm font-semibold text-[#D4A843] hover:text-[#F0D78C] transition-colors duration-300 tracking-wide flex items-center gap-1"
-                                        : "text-sm font-medium text-white/80 hover:text-primary transition-colors duration-300 tracking-wide"
+                                        ? "lg:text-xs xl:text-sm font-semibold text-[#D4A843] hover:text-[#F0D78C] transition-colors duration-300 tracking-wide flex items-center gap-1 shrink-0"
+                                        : "lg:text-xs xl:text-sm font-medium text-white/80 hover:text-primary transition-colors duration-300 tracking-wide shrink-0"
                                 }
                             >
                                 {link.highlight && <span className="animate-pulse">🔥</span>}
@@ -51,8 +51,8 @@ export default function Navigation() {
                     </div>
 
                     {/* CTA Button */}
-                    <div className="hidden md:block">
-                        <Link href="/contact" className="btn-primary text-sm">
+                    <div className="hidden lg:block shrink-0">
+                        <Link href="/contact" className="btn-primary lg:px-4 lg:py-2 xl:px-6 xl:py-3 lg:text-xs xl:text-sm">
                             JOIN US
                         </Link>
                     </div>
@@ -60,7 +60,7 @@ export default function Navigation() {
                     {/* Mobile Menu Button */}
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="md:hidden text-white p-2"
+                        className="lg:hidden text-white p-2"
                         aria-label="Toggle menu"
                     >
                         <svg
@@ -90,7 +90,7 @@ export default function Navigation() {
 
                 {/* Mobile Menu */}
                 {isMenuOpen && (
-                    <div className="md:hidden py-4 border-t border-primary/10">
+                    <div className="lg:hidden py-4 border-t border-primary/10">
                         <div className="flex flex-col space-y-4">
                             {navLinks.map((link) => (
                                 <Link
