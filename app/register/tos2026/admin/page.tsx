@@ -140,11 +140,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // Calculate stats
-  const totalRegistrations = registrations.length;
-  const totalAttendees = registrations.reduce((sum, reg) => sum + reg.attendees.length, 0);
-  const totalRevenue = registrations.reduce((sum, reg) => sum + reg.totalAmount, 0);
-  
   // Filter registrations
   const filteredRegistrations = registrations.filter(reg => {
     const matchesSearch = 
@@ -156,6 +151,11 @@ export default function AdminDashboard() {
     
     return matchesSearch && matchesStatus;
   }).sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime());
+
+  // Calculate stats based on filtered list
+  const totalRegistrations = filteredRegistrations.length;
+  const totalAttendees = filteredRegistrations.reduce((sum, reg) => sum + reg.attendees.length, 0);
+  const totalRevenue = filteredRegistrations.reduce((sum, reg) => sum + reg.totalAmount, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F1A0A] via-[#1A1A1A] to-[#0A0A0A] pt-32 pb-16 px-4 sm:px-6 lg:px-8">
