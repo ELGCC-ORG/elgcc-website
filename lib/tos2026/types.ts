@@ -42,7 +42,7 @@ export interface Registration {
   registeredAt: string;
   paidAt?: string;
   flutterwaveTransactionId?: string;
-  paymentProvider?: 'flutterwave';
+  paymentProvider?: 'flutterwave' | 'manual';
 }
 
 export interface CategoryConfig {

@@ -126,3 +126,47 @@ export async function markFlutterwaveRegistrationFailed(transaction: Flutterwave
 
   return registrationId;
 }
+
+export async function markRegistrationPaidManually(registrationId: string, reference: string = 'MANUAL') {
+  const registration = await findRegistrationForPayment(registrationId);
+
+  if (!registration) {
+    throw new Error(`No TOS registration found for ${registrationId}.`);
+  }
+
+  const wasAlreadyPaid = registration.paymentStatus === 'paid';
+  const paidAt = new Date().toISOString();
+
+  try {
+    updateLocalRegistrationPayment(registration.registrationId, {
+      status: 'paid',
+      paymentReference: reference,
+      paidAt,
+    });
+  } catch (error) {
+    console.log('Local payment update unavailable:', error);
+  }
+
+  await updateGoogleSheetPaymentStatus(registration.registrationId, {
+    paymentStatus: 'paid',
+    paymentReference: reference,
+    flutterwaveTransactionId: '',
+    paidAt,
+    paymentProvider: 'manual',
+  });
+
+  const paidRegistration: Registration = {
+    ...registration,
+    paymentStatus: 'paid',
+    paymentReference: reference,
+    paidAt,
+    paymentProvider: 'manual',
+  };
+
+  if (!wasAlreadyPaid) {
+    await sendConfirmationEmail(paidRegistration);
+  }
+
+  return paidRegistration;
+}
+

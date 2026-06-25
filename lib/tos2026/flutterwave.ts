@@ -121,6 +121,22 @@ export async function verifyFlutterwaveTransaction(transactionId: string) {
   return body.data;
 }
 
+export async function verifyFlutterwaveTransactionByRef(txRef: string) {
+  const response = await fetch(`${FLUTTERWAVE_API_BASE}/transactions/verify_by_reference?tx_ref=${txRef}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  const body = (await response.json()) as FlutterwaveVerifyResponse;
+
+  if (!response.ok || body.status !== 'success' || !body.data) {
+    throw new Error(body.message || 'Unable to verify Flutterwave transaction by reference.');
+  }
+
+  return body.data;
+}
+
+
 export function getRegistrationIdFromTransaction(transaction: FlutterwaveTransaction) {
   const metaRegistrationId = transaction.meta?.registrationId;
   if (typeof metaRegistrationId === 'string' && metaRegistrationId.startsWith('TOS26-')) {
