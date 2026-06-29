@@ -82,8 +82,10 @@ export async function POST(req: NextRequest) {
       console.log('File storage unavailable (expected on Vercel):', fsError);
     }
 
-    // Sync to Google Sheets (if credentials are set)
-    await appendToGoogleSheet(registration);
+    // Sync to Google Sheets (if credentials are set and already paid)
+    if (registration.paymentStatus === 'paid') {
+      await appendToGoogleSheet(registration);
+    }
 
     if (flutterwaveConfigured) {
       const { paymentLink, txRef } = await createFlutterwavePaymentLink(

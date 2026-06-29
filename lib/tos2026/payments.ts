@@ -6,6 +6,7 @@ import {
 import { sendConfirmationEmail } from './email';
 import { getLocalRegistration, updateLocalRegistrationPayment } from './registrations';
 import {
+  appendToGoogleSheet,
   getRegistrationFromGoogleSheet,
   updateGoogleSheetPaymentStatus,
 } from './sheets';
@@ -55,14 +56,6 @@ export async function markFlutterwaveRegistrationPaid(transaction: FlutterwaveTr
     console.log('Local payment update unavailable:', error);
   }
 
-  await updateGoogleSheetPaymentStatus(registration.registrationId, {
-    paymentStatus: 'paid',
-    paymentReference,
-    flutterwaveTransactionId,
-    paidAt,
-    paymentProvider: 'flutterwave',
-  });
-
   const paidRegistration: Registration = {
     ...registration,
     paymentStatus: 'paid',
@@ -71,6 +64,18 @@ export async function markFlutterwaveRegistrationPaid(transaction: FlutterwaveTr
     paidAt,
     paymentProvider: 'flutterwave',
   };
+
+  const updatedInSheets = await updateGoogleSheetPaymentStatus(registration.registrationId, {
+    paymentStatus: 'paid',
+    paymentReference,
+    flutterwaveTransactionId,
+    paidAt,
+    paymentProvider: 'flutterwave',
+  });
+
+  if (!updatedInSheets) {
+    await appendToGoogleSheet(paidRegistration);
+  }
 
   if (!wasAlreadyPaid) {
     await sendConfirmationEmail(paidRegistration);
@@ -147,14 +152,6 @@ export async function markRegistrationPaidManually(registrationId: string, refer
     console.log('Local payment update unavailable:', error);
   }
 
-  await updateGoogleSheetPaymentStatus(registration.registrationId, {
-    paymentStatus: 'paid',
-    paymentReference: reference,
-    flutterwaveTransactionId: '',
-    paidAt,
-    paymentProvider: 'manual',
-  });
-
   const paidRegistration: Registration = {
     ...registration,
     paymentStatus: 'paid',
@@ -162,6 +159,18 @@ export async function markRegistrationPaidManually(registrationId: string, refer
     paidAt,
     paymentProvider: 'manual',
   };
+
+  const updatedInSheets = await updateGoogleSheetPaymentStatus(registration.registrationId, {
+    paymentStatus: 'paid',
+    paymentReference: reference,
+    flutterwaveTransactionId: '',
+    paidAt,
+    paymentProvider: 'manual',
+  });
+
+  if (!updatedInSheets) {
+    await appendToGoogleSheet(paidRegistration);
+  }
 
   if (!wasAlreadyPaid) {
     await sendConfirmationEmail(paidRegistration);
