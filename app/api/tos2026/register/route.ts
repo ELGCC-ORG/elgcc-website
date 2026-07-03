@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateRegistrationId, calculatePriceBreakdown } from '@/lib/tos2026/pricing';
 import { Attendee, CoordinatorInfo, Registration, RegistrationType } from '@/lib/tos2026/types';
 
-import { appendToGoogleSheet, getAllRegistrationsFromGoogleSheet } from '@/lib/tos2026/sheets';
+import {
+  appendToGoogleSheet,
+  getAllRegistrationsFromGoogleSheet,
+  appendToPendingGoogleSheet,
+  getAllPendingRegistrationsFromGoogleSheet,
+} from '@/lib/tos2026/sheets';
 import { sendConfirmationEmail } from '@/lib/tos2026/email';
 import { saveLocalRegistration, getLocalRegistrations } from '@/lib/tos2026/registrations';
 import {
@@ -82,9 +87,11 @@ export async function POST(req: NextRequest) {
       console.log('File storage unavailable (expected on Vercel):', fsError);
     }
 
-    // Sync to Google Sheets (if credentials are set and already paid)
+    // Sync to Google Sheets (if credentials are set and already paid, otherwise sync to pending sheet)
     if (registration.paymentStatus === 'paid') {
       await appendToGoogleSheet(registration);
+    } else {
+      await appendToPendingGoogleSheet(registration);
     }
 
     if (flutterwaveConfigured) {
@@ -150,6 +157,7 @@ export async function GET(req: NextRequest) {
     // Fetch local and Google Sheet registrations
     const localData = getLocalRegistrations();
     let sheetsData: Registration[] = [];
+    let pendingSheetsData: Registration[] = [];
     
     try {
       sheetsData = await getAllRegistrationsFromGoogleSheet();
@@ -157,10 +165,21 @@ export async function GET(req: NextRequest) {
       console.error('Error fetching from Google Sheets in admin GET:', sheetErr);
     }
 
-    // Merge both sources (deduplicating by registrationId, preferring paid/completed status)
+    try {
+      pendingSheetsData = await getAllPendingRegistrationsFromGoogleSheet();
+    } catch (sheetErr) {
+      console.error('Error fetching pending from Google Sheets in admin GET:', sheetErr);
+    }
+
+    // Merge sources (deduplicating by registrationId, preferring paid/completed status)
     const mergedMap = new Map<string, Registration>();
     
-    // First put sheets data (primary persistent store)
+    // First put pending sheets data
+    for (const reg of pendingSheetsData) {
+      mergedMap.set(reg.registrationId, reg);
+    }
+    
+    // Then put main sheets data (primary persistent store, overwriting pending)
     for (const reg of sheetsData) {
       mergedMap.set(reg.registrationId, reg);
     }
@@ -171,7 +190,7 @@ export async function GET(req: NextRequest) {
       if (!existing) {
         mergedMap.set(reg.registrationId, reg);
       } else {
-        // If local is paid but sheet is pending, prefer the local
+        // If local is paid but existing is pending, prefer the local
         if (reg.paymentStatus === 'paid' && existing.paymentStatus !== 'paid') {
           mergedMap.set(reg.registrationId, {
             ...existing,

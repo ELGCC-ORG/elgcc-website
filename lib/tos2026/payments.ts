@@ -7,7 +7,9 @@ import { sendConfirmationEmail } from './email';
 import { getLocalRegistration, updateLocalRegistrationPayment } from './registrations';
 import {
   appendToGoogleSheet,
+  deleteFromPendingGoogleSheet,
   getRegistrationFromGoogleSheet,
+  getRegistrationFromPendingGoogleSheet,
   updateGoogleSheetPaymentStatus,
 } from './sheets';
 import { Registration } from './types';
@@ -22,7 +24,12 @@ export async function findRegistrationForPayment(registrationId: string) {
     console.log('Local registration lookup unavailable:', error);
   }
 
-  return getRegistrationFromGoogleSheet(registrationId);
+  const mainReg = await getRegistrationFromGoogleSheet(registrationId);
+  if (mainReg) {
+    return mainReg;
+  }
+
+  return getRegistrationFromPendingGoogleSheet(registrationId);
 }
 
 export async function markFlutterwaveRegistrationPaid(transaction: FlutterwaveTransaction) {
@@ -76,6 +83,9 @@ export async function markFlutterwaveRegistrationPaid(transaction: FlutterwaveTr
   if (!updatedInSheets) {
     await appendToGoogleSheet(paidRegistration);
   }
+
+  // Delete from pending sheet since it is now in the main sheet
+  await deleteFromPendingGoogleSheet(registration.registrationId);
 
   if (!wasAlreadyPaid) {
     await sendConfirmationEmail(paidRegistration);
@@ -171,6 +181,9 @@ export async function markRegistrationPaidManually(registrationId: string, refer
   if (!updatedInSheets) {
     await appendToGoogleSheet(paidRegistration);
   }
+
+  // Delete from pending sheet since it is now in the main sheet
+  await deleteFromPendingGoogleSheet(registration.registrationId);
 
   if (!wasAlreadyPaid) {
     await sendConfirmationEmail(paidRegistration);
