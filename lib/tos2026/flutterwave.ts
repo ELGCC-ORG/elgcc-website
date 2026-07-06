@@ -25,6 +25,7 @@ export interface FlutterwaveTransaction {
     phone_number?: string;
   };
   meta?: Record<string, unknown>;
+  created_at?: string;
 }
 
 interface FlutterwaveVerifyResponse {

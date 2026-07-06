@@ -40,7 +40,32 @@ function getGoogleSheetCredentials() {
   return { spreadsheetId, clientEmail, privateKey };
 }
 
+let cachedDoc: GoogleSpreadsheet | null = null;
+
+async function ensureSheetHeaders(sheet: any) {
+  let headersLoaded = false;
+  try {
+    if (sheet.headerValues && sheet.headerValues.length > 0) {
+      headersLoaded = true;
+    }
+  } catch (e) {
+    // headerValues throws "Header values are not yet loaded" if not loaded
+  }
+
+  if (!headersLoaded) {
+    await sheet.loadHeaderRow();
+  }
+}
+
 async function getSheetByTitle(title: string) {
+  if (cachedDoc) {
+    let sheet = cachedDoc.sheetsByTitle[title];
+    if (sheet) {
+      await ensureSheetHeaders(sheet);
+      return sheet;
+    }
+  }
+
   const credentials = getGoogleSheetCredentials();
 
   if (!credentials) {
@@ -55,6 +80,7 @@ async function getSheetByTitle(title: string) {
 
   const doc = new GoogleSpreadsheet(credentials.spreadsheetId, serviceAccountAuth);
   await doc.loadInfo();
+  cachedDoc = doc;
 
   let sheet = doc.sheetsByTitle[title];
 
@@ -66,7 +92,7 @@ async function getSheetByTitle(title: string) {
     return sheet;
   }
 
-  await sheet.loadHeaderRow();
+  await ensureSheetHeaders(sheet);
   const missingHeaders = REGISTRATION_HEADERS.filter((header) => !sheet.headerValues.includes(header));
 
   if (missingHeaders.length > 0) {
@@ -175,33 +201,16 @@ export async function updateGoogleSheetPaymentStatus(
   }
 ) {
   try {
-    const sheet = await getRegistrationsSheet();
+    const cleanedRegId = String(registrationId || '').trim();
 
-    if (!sheet) {
-      console.warn('Google Sheets credentials missing. Skipping payment status update.');
-      return false;
-    }
-
-    const rows = await sheet.getRows<RegistrationSheetRow>();
-    const matchingRows = rows.filter((row) => row.get('Registration ID') === registrationId);
-
-    if (matchingRows.length > 0) {
-      for (const row of matchingRows) {
-        row.set('Payment Status', payment.paymentStatus);
-        row.set('Payment Reference', payment.paymentReference);
-        row.set('Flutterwave Transaction ID', payment.flutterwaveTransactionId);
-        row.set('Paid At', payment.paidAt);
-        row.set('Payment Provider', payment.paymentProvider);
-        await row.save();
-      }
-      return true;
-    }
-
-    // Try the pending sheet if not found in the main sheet
+    // Try the pending sheet first, because most status updates (especially to paid)
+    // are for registrations currently in the pending sheet
     const pendingSheet = await getPendingRegistrationsSheet();
     if (pendingSheet) {
       const pendingRows = await pendingSheet.getRows<RegistrationSheetRow>();
-      const matchingPendingRows = pendingRows.filter((row) => row.get('Registration ID') === registrationId);
+      const matchingPendingRows = pendingRows.filter(
+        (row) => String(row.get('Registration ID') || '').trim() === cleanedRegId
+      );
 
       if (matchingPendingRows.length > 0) {
         // If the payment status is updated to paid, we return false
@@ -222,6 +231,31 @@ export async function updateGoogleSheetPaymentStatus(
       }
     }
 
+    // Fallback to main sheet
+    const sheet = await getRegistrationsSheet();
+
+    if (!sheet) {
+      console.warn('Google Sheets credentials missing. Skipping payment status update.');
+      return false;
+    }
+
+    const rows = await sheet.getRows<RegistrationSheetRow>();
+    const matchingRows = rows.filter(
+      (row) => String(row.get('Registration ID') || '').trim() === cleanedRegId
+    );
+
+    if (matchingRows.length > 0) {
+      for (const row of matchingRows) {
+        row.set('Payment Status', payment.paymentStatus);
+        row.set('Payment Reference', payment.paymentReference);
+        row.set('Flutterwave Transaction ID', payment.flutterwaveTransactionId);
+        row.set('Paid At', payment.paidAt);
+        row.set('Payment Provider', payment.paymentProvider);
+        await row.save();
+      }
+      return true;
+    }
+
     return false;
   } catch (error) {
     console.error('Failed to update Google Sheets payment status:', error);
@@ -237,8 +271,9 @@ export async function getRegistrationFromGoogleSheet(registrationId: string): Pr
       return null;
     }
 
+    const cleanedRegId = String(registrationId || '').trim();
     const rows = await sheet.getRows<RegistrationSheetRow>();
-    const matchingRows = rows.filter((row) => row.get('Registration ID') === registrationId);
+    const matchingRows = rows.filter((row) => String(row.get('Registration ID') || '').trim() === cleanedRegId);
 
     if (matchingRows.length === 0) {
       return null;
@@ -406,8 +441,9 @@ export async function deleteFromPendingGoogleSheet(registrationId: string) {
       return false;
     }
 
+    const cleanedRegId = String(registrationId || '').trim();
     const rows = await sheet.getRows<RegistrationSheetRow>();
-    const matchingRows = rows.filter((row) => row.get('Registration ID') === registrationId);
+    const matchingRows = rows.filter((row) => String(row.get('Registration ID') || '').trim() === cleanedRegId);
 
     for (const row of matchingRows) {
       await row.delete();
@@ -429,8 +465,9 @@ export async function getRegistrationFromPendingGoogleSheet(registrationId: stri
       return null;
     }
 
+    const cleanedRegId = String(registrationId || '').trim();
     const rows = await sheet.getRows<RegistrationSheetRow>();
-    const matchingRows = rows.filter((row) => row.get('Registration ID') === registrationId);
+    const matchingRows = rows.filter((row) => String(row.get('Registration ID') || '').trim() === cleanedRegId);
 
     if (matchingRows.length === 0) {
       return null;

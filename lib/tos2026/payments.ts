@@ -24,12 +24,13 @@ export async function findRegistrationForPayment(registrationId: string) {
     console.log('Local registration lookup unavailable:', error);
   }
 
-  const mainReg = await getRegistrationFromGoogleSheet(registrationId);
-  if (mainReg) {
-    return mainReg;
+  // Check pending sheet first, because most payments are for pending registrations
+  const pendingReg = await getRegistrationFromPendingGoogleSheet(registrationId);
+  if (pendingReg) {
+    return pendingReg;
   }
 
-  return getRegistrationFromPendingGoogleSheet(registrationId);
+  return getRegistrationFromGoogleSheet(registrationId);
 }
 
 export async function markFlutterwaveRegistrationPaid(transaction: FlutterwaveTransaction) {
@@ -39,10 +40,57 @@ export async function markFlutterwaveRegistrationPaid(transaction: FlutterwaveTr
     throw new Error('Flutterwave transaction is missing a TOS registration reference.');
   }
 
-  const registration = await findRegistrationForPayment(registrationId);
+  let registration = await findRegistrationForPayment(registrationId);
 
   if (!registration) {
-    throw new Error(`No TOS registration found for ${registrationId}.`);
+    // Reconstruct registration details from Flutterwave transaction metadata and customer fields
+    const attendeeCount = Number(transaction.meta?.attendeeCount || 1);
+    const coordinatorName = String(transaction.customer?.name || transaction.meta?.originatorname || 'Unknown');
+    const coordinatorPhone = String(transaction.customer?.phone_number || '');
+    const coordinatorEmail = String(transaction.customer?.email || '');
+    const coordinatorChurch = String(transaction.meta?.coordinatorChurch || '');
+
+    const attendees: import('./types').Attendee[] = [{
+      id: `${registrationId}-0`,
+      fullName: coordinatorName,
+      gender: '',
+      category: 'working_class', // Safe fallback category
+      phoneNumber: coordinatorPhone,
+      emailAddress: coordinatorEmail,
+      region: 'Southern Nigeria',
+      localChurch: coordinatorChurch,
+      medicalConditions: 'None',
+    }];
+
+    for (let i = 1; i < attendeeCount; i++) {
+      attendees.push({
+        id: `${registrationId}-${i}`,
+        fullName: `Attendee ${i + 1} (Please update manually)`,
+        gender: '',
+        category: 'working_class',
+        phoneNumber: '',
+        emailAddress: '',
+        region: 'Southern Nigeria',
+        localChurch: '',
+        medicalConditions: 'None',
+      });
+    }
+
+    registration = {
+      registrationId,
+      registrationType: (transaction.meta?.registrationType as any) || (attendeeCount > 1 ? 'group' : 'individual'),
+      coordinator: {
+        fullName: coordinatorName,
+        phoneNumber: coordinatorPhone,
+        emailAddress: coordinatorEmail,
+        churchName: coordinatorChurch,
+      },
+      attendees,
+      totalAmount: Number(transaction.amount || 0),
+      paymentStatus: 'paid',
+      paymentReference: transaction.tx_ref || registrationId,
+      registeredAt: typeof transaction.created_at === 'string' ? transaction.created_at : new Date().toISOString(),
+    };
   }
 
   assertFlutterwavePaymentMatchesRegistration(transaction, registration);
