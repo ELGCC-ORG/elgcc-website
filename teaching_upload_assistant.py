@@ -472,8 +472,9 @@ class TeachingUploadAssistant:
                     if is_duplicate(existing + drafts, draft):
                         raise RuntimeError(f"Duplicate blocked: {entry.title}")
 
-                    self.set_entry_status(index, "Uploading")
-                    self.run_archive_upload(stage, item, clean_name, draft["year"], draft["speaker"])
+                    self.set_entry_status(index, "Uploading (0%)")
+                    queue_derive = (index == len(self.entries) - 1)
+                    self.run_archive_upload(index, stage, item, clean_name, draft["year"], draft["speaker"], queue_derive=queue_derive)
                     drafts.append(draft)
                     self.set_entry_status(index, "Uploaded")
 
@@ -508,7 +509,8 @@ class TeachingUploadAssistant:
         finally:
             self.uploading = False
 
-    def run_archive_upload(self, cwd, item, file_name, year, speaker):
+    def run_archive_upload(self, index, cwd, item, file_name, year, speaker, queue_derive=True):
+        import re
         command = [
             sys.executable,
             "-c",
@@ -520,10 +522,45 @@ class TeachingUploadAssistant:
             f"--metadata=collection:{ARCHIVE_COLLECTION}",
             f"--metadata=creator:{ARCHIVE_CREATOR}",
             f"--metadata=description:{archive_description(year, speaker)}",
+            "--verbose",
+            "--retries", "10",
+            "--sleep", "60",
         ]
-        result = subprocess.run(command, cwd=str(cwd), capture_output=True, text=True, check=False)
-        if result.returncode != 0:
-            details = (result.stderr or result.stdout or "Archive.org upload failed.").strip()
+        if not queue_derive:
+            command.append("--no-derive")
+        
+        process = subprocess.Popen(
+            command,
+            cwd=str(cwd),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1
+        )
+        
+        output_lines = []
+        buffer = []
+        while True:
+            char = process.stdout.read(1)
+            if not char:
+                break
+            if char in ('\r', '\n'):
+                line = ''.join(buffer).strip()
+                buffer = []
+                if line:
+                    output_lines.append(line)
+                    # Look for percentage in output: e.g. " 12%|"
+                    pct_match = re.search(r'(\b\d+)%', line)
+                    if pct_match:
+                        pct = pct_match.group(1)
+                        self.set_entry_status(index, f"Uploading ({pct}%)")
+            else:
+                buffer.append(char)
+                
+        process.wait()
+        
+        if process.returncode != 0:
+            details = "\n".join(output_lines).strip() or "Archive.org upload failed."
             raise RuntimeError(details)
 
     def run_validation_or_raise(self):
