@@ -522,9 +522,8 @@ class TeachingUploadAssistant:
             f"--metadata=collection:{ARCHIVE_COLLECTION}",
             f"--metadata=creator:{ARCHIVE_CREATOR}",
             f"--metadata=description:{archive_description(year, speaker)}",
-            "--verbose",
-            "--retries", "10",
-            "--sleep", "60",
+            "-R", "10",
+            "-s", "60",
         ]
         if not queue_derive:
             command.append("--no-derive")
