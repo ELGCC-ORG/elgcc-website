@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import TOS2026Popup from "@/components/tos2026/TOS2026Popup";
 import Script from "next/script";
 
 const inter = Inter({
@@ -54,7 +53,6 @@ export default function RootLayout({
                     />
                 </noscript>
                 <Navigation />
-                <TOS2026Popup />
                 <main>{children}</main>
                 <Footer />
             </body>

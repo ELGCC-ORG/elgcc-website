@@ -41,6 +41,28 @@ export default function RegistrationForm() {
     coordinator: CoordinatorInfo;
   } | null>(null);
 
+  const isRegistrationClosed = true;
+
+  if (isRegistrationClosed) {
+    return (
+      <div className="container-custom py-16 max-w-2xl mx-auto">
+        <div className="tos-card rounded-2xl p-8 md:p-12 text-center tos-fade-in bg-white shadow-xl border border-slate-105">
+          <div className="text-6xl mb-6">🔒</div>
+          <h2 className="text-3xl font-black text-slate-900 mb-3">
+            Registration Closed
+          </h2>
+          <p className="text-slate-600 mb-8 max-w-md mx-auto leading-relaxed">
+            Thank you for your interest. Registration for Training of the Spirit 2026 is now closed.
+          </p>
+          <div className="h-px bg-slate-200 my-6" />
+          <p className="text-slate-500 text-sm">
+            For enquiries or support, please contact the administration at <span className="font-semibold text-[#D4A843]">eternallifegcc@gmail.com</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const updateCoordinator = (field: keyof CoordinatorInfo, value: string) => {
     setCoordinator((prev) => ({ ...prev, [field]: value }));
     if (coordErrors[field]) {
