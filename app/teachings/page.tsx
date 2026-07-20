@@ -160,35 +160,29 @@ function SectionHeader({ title, eyebrow }: { title: string; eyebrow?: string }) 
   );
 }
 
-function SeriesArtwork({ sermon, compact = false }: { sermon: Sermon; compact?: boolean }) {
+function SeriesArtwork({ sermon }: { sermon: Sermon; compact?: boolean }) {
   const trackLabel = getTrackLabel(sermon.title);
 
   return (
-    <div className={`teaching-artwork flex flex-col ${compact ? 'min-h-[6rem] rounded-lg p-3' : 'min-h-[11rem] p-4'} ${getSeriesColor(sermon.series)}`}>
-      <div className="flex items-start justify-between gap-2">
-        <span className="bg-black/45 text-white/90 font-bold text-xs px-2.5 py-1 rounded-full border border-white/20">
-          {sermon.year}
-        </span>
-        {trackLabel ? (
-          <span className="bg-black/45 text-white font-bold text-xs px-2.5 py-1 rounded-full border border-white/20">
-            {trackLabel}
-          </span>
-        ) : (
-          <span />
-        )}
-      </div>
-      <div className="mt-3 flex flex-1 flex-col items-center justify-center text-center">
-        <span className="text-white/70 text-[10px] font-bold tracking-widest uppercase mb-2 border border-white/20 rounded-full px-2 py-0.5 bg-black/25">
+    <div className="teaching-artwork">
+      <div className={`h-1.5 w-full ${getSeriesColor(sermon.series)}`} />
+      <div className="px-4 pt-4">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-white/65">
+          <span>{sermon.year}</span>
+          {trackLabel && (
+            <>
+              <span aria-hidden="true">•</span>
+              <span>{trackLabel}</span>
+            </>
+          )}
+        </div>
+        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
           {cleanSeriesTitle(sermon.series, sermon.year)}
-        </span>
-        <h3 className={`${compact ? 'text-base' : 'text-lg md:text-xl'} font-bold text-white mb-2 leading-tight line-clamp-3 px-1`}>
+        </p>
+        <h3 className="mt-2 text-lg font-bold leading-snug text-white line-clamp-3">
           {normalizeText(sermon.title)}
         </h3>
-        {!compact && (
-          <p className="text-white/90 text-[10px] font-medium tracking-wide">
-            {sermon.speaker || DEFAULT_SPEAKER}
-          </p>
-        )}
+        <p className="mt-2 text-xs text-white/55">{sermon.speaker || DEFAULT_SPEAKER}</p>
       </div>
     </div>
   );
@@ -206,14 +200,14 @@ function TeachingCard({
   copied: boolean;
 }) {
   return (
-    <article className="teaching-card rounded-xl border border-white/10 bg-dark-card">
+    <article className="teaching-card border border-white/10 bg-dark-card">
       <SeriesArtwork sermon={sermon} />
-      <div className="p-4 bg-dark-lighter">
+      <div className="p-4 pt-3">
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => onPlay(sermon)}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-bold text-dark"
+            className="inline-flex flex-1 items-center justify-center gap-2 bg-primary px-3 py-2 text-sm font-bold text-dark"
           >
             <PlayIcon className="h-4 w-4" />
             Listen
@@ -221,7 +215,7 @@ function TeachingCard({
           <a
             href={sermon.audioUrl}
             download
-            className="inline-flex items-center justify-center rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold text-white/70"
+            className="inline-flex items-center justify-center border border-white/10 px-3 py-2 text-sm font-semibold text-white/70"
             aria-label={`Download ${cleanSermonTitle(sermon)}`}
           >
             <DownloadIcon />
@@ -229,7 +223,7 @@ function TeachingCard({
           <button
             type="button"
             onClick={() => onCopy(sermon)}
-            className="inline-flex items-center justify-center rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold text-white/70"
+            className="inline-flex items-center justify-center border border-white/10 px-3 py-2 text-sm font-semibold text-white/70"
             aria-label={`Copy branded link for ${cleanSermonTitle(sermon)}`}
             title={copied ? 'Copied' : 'Copy link'}
           >

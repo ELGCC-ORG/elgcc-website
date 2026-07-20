@@ -27,7 +27,13 @@ body {
   overflow-x: clip;
 }
 
-/* Solid, filter-free teaching cards — avoid compositor glitches on mobile Chromium. */
+/* Chrome (especially Android) is aggressive about GPU compositing and can
+ * briefly corrupt tiles when many rounded/alpha layers paint at once.
+ * Keep teachings markup paint-simple and avoid smooth scrolling there. */
+.teachings-page {
+  scroll-behavior: auto;
+}
+
 .teachings-page,
 .teachings-page * {
   backdrop-filter: none !important;
@@ -40,6 +46,7 @@ body {
   transform: none !important;
   will-change: auto !important;
   -webkit-transform: none !important;
+  border-radius: 0 !important;
 }
 
 @layer utilities {
