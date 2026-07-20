@@ -162,18 +162,18 @@ function SeriesArtwork({ sermon, compact = false }: { sermon: Sermon; compact?: 
   const trackLabel = getTrackLabel(sermon.title);
 
   return (
-    <div className={`relative overflow-hidden ${compact ? 'h-24 rounded-lg' : 'h-48'} bg-gradient-to-br ${getSeriesGradient(sermon.series)}`}>
-      <div className="absolute top-3 left-3 z-20 bg-black/40 backdrop-blur-sm text-white/90 font-bold text-xs px-2.5 py-1 rounded-full border border-white/20">
+    <div className={`teaching-artwork relative overflow-hidden ${compact ? 'h-24 rounded-lg' : 'h-48'} bg-gradient-to-br ${getSeriesGradient(sermon.series)}`}>
+      <div className="absolute top-3 left-3 z-20 bg-black/50 text-white/90 font-bold text-xs px-2.5 py-1 rounded-full border border-white/20">
         {sermon.year}
       </div>
       {trackLabel && (
-        <div className="absolute top-3 right-3 z-20 bg-black/40 backdrop-blur-sm text-white font-bold text-xs px-2.5 py-1 rounded-full border border-white/20">
+        <div className="absolute top-3 right-3 z-20 bg-black/50 text-white font-bold text-xs px-2.5 py-1 rounded-full border border-white/20">
           {trackLabel}
         </div>
       )}
       <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-        <div className="relative z-10 transform group-hover:scale-105 transition-transform duration-300 w-full">
-          <span className="text-white/60 text-[10px] font-bold tracking-widest uppercase mb-2 block border border-white/20 rounded-full px-2 py-0.5 w-fit mx-auto bg-black/10 backdrop-blur-sm">
+        <div className="relative z-10 w-full">
+          <span className="text-white/60 text-[10px] font-bold tracking-widest uppercase mb-2 block border border-white/20 rounded-full px-2 py-0.5 w-fit mx-auto bg-black/20">
           {cleanSeriesTitle(sermon.series, sermon.year)}
           </span>
           <h3 className={`${compact ? 'text-base' : 'text-lg md:text-xl'} font-bold text-white mb-3 leading-tight shadow-sm line-clamp-3 px-2`}>
@@ -188,7 +188,7 @@ function SeriesArtwork({ sermon, compact = false }: { sermon: Sermon; compact?: 
         </div>
       </div>
       <div className="absolute inset-0 bg-black/10" />
-      <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-white/5 rounded-full blur-xl" />
+      <div className="absolute -bottom-8 -right-8 w-24 h-24 rounded-full bg-white/5" />
     </div>
   );
 }
@@ -205,16 +205,16 @@ function TeachingCard({
   copied: boolean;
 }) {
   return (
-    <article className="group overflow-hidden rounded-xl border border-white/10 bg-dark-card transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl hover:shadow-black/20">
+    <article className="teaching-card group overflow-hidden rounded-xl border border-white/10 bg-dark-card transition-colors hover:border-primary/40">
       <div className="relative">
         <SeriesArtwork sermon={sermon} />
         <button
           type="button"
           onClick={() => onPlay(sermon)}
-          className="absolute inset-0 z-20 flex items-center justify-center bg-dark/40 opacity-0 backdrop-blur-[1px] transition-opacity duration-300 group-hover:opacity-100"
+          className="teaching-play-overlay absolute inset-0 z-20 flex items-center justify-center bg-dark/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
           aria-label={`Listen to ${cleanSermonTitle(sermon)}`}
         >
-          <span className="flex w-14 h-14 scale-50 items-center justify-center rounded-full bg-primary text-dark shadow-lg transition-all duration-300 group-hover:scale-100 hover:bg-white hover:text-primary">
+          <span className="teaching-play-button flex w-14 h-14 scale-50 items-center justify-center rounded-full bg-primary text-dark shadow-lg transition-transform duration-300 group-hover:scale-100">
             <PlayIcon className="w-6 h-6 ml-0.5" />
           </span>
         </button>
@@ -265,7 +265,7 @@ function PopularSeriesCard({
     <button
       type="button"
       onClick={() => onOpen(group.key)}
-      className={`rounded-xl border p-5 text-left transition-all hover:-translate-y-1 hover:border-primary/40 ${
+      className={`rounded-xl border p-5 text-left transition-colors hover:border-primary/40 ${
         isExpanded ? 'border-primary/50 bg-primary/10' : 'border-white/10 bg-dark-card'
       }`}
     >
@@ -376,7 +376,7 @@ function LibrarySeriesRow({
   copiedSermonId: string | null;
 }) {
   return (
-    <div className={`overflow-hidden rounded-2xl border transition-all duration-300 ${
+    <div className={`teaching-library-row overflow-hidden rounded-2xl border transition-colors duration-300 ${
       expanded ? 'border-primary/30 bg-dark-card shadow-lg shadow-primary/5' : 'border-white/10 bg-dark-card hover:border-white/20'
     }`}>
       <button
@@ -463,7 +463,7 @@ function StickyPlayer({
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-primary/20 bg-[#111]/95 px-4 py-3 shadow-2xl backdrop-blur">
+    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-primary/20 bg-[#111] px-4 py-3 shadow-2xl">
       <div className="mx-auto grid max-w-7xl gap-3 md:grid-cols-[1fr_minmax(320px,520px)_auto] md:items-center">
         <div className="min-w-0">
           <p className="text-primary text-xs font-bold uppercase tracking-[0.18em]">
@@ -586,7 +586,7 @@ export default function TeachingsPage() {
   };
 
   return (
-    <div className={`min-h-screen bg-dark pt-20 ${activeSermon ? 'pb-36' : ''}`}>
+    <div className={`teachings-page min-h-screen bg-dark pt-20 ${activeSermon ? 'pb-36' : ''}`}>
       <header className="border-b border-primary/10 bg-dark-lighter py-16">
         <div className="container-custom">
           <div className="max-w-4xl">

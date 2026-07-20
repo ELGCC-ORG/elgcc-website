@@ -27,6 +27,32 @@ body {
   overflow-x: hidden;
 }
 
+/*
+ * Keep the large teachings archive cheap to paint. In particular, avoid
+ * combining translucent filters with transformed, clipped cards: some mobile
+ * Chromium GPUs briefly reuse stale compositor tiles while the page hydrates.
+ */
+.teaching-artwork,
+.teaching-card {
+  isolation: isolate;
+}
+
+.teaching-library-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 92px;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .teaching-play-overlay {
+    background-color: transparent;
+    opacity: 1;
+  }
+
+  .teaching-play-button {
+    transform: none;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
