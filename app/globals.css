@@ -24,33 +24,22 @@ body {
   background-color: var(--color-dark);
   color: #ffffff;
   font-family: var(--font-inter), system-ui, sans-serif;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
-/*
- * Keep the large teachings archive cheap to paint. In particular, avoid
- * combining translucent filters with transformed, clipped cards: some mobile
- * Chromium GPUs briefly reuse stale compositor tiles while the page hydrates.
- */
-.teaching-artwork,
-.teaching-card {
-  isolation: isolate;
+/* Solid, filter-free teaching cards — avoid compositor glitches on mobile Chromium. */
+.teachings-page,
+.teachings-page * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-.teaching-library-row {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 92px;
-}
-
-@media (hover: none), (pointer: coarse) {
-  .teaching-play-overlay {
-    background-color: transparent;
-    opacity: 1;
-  }
-
-  .teaching-play-button {
-    transform: none;
-  }
+.teachings-page .teaching-card,
+.teachings-page .teaching-artwork {
+  filter: none !important;
+  transform: none !important;
+  will-change: auto !important;
+  -webkit-transform: none !important;
 }
 
 @layer utilities {

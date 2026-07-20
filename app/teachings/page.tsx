@@ -14,16 +14,18 @@ type SeriesGroup = {
   count: number;
 };
 
-const gradientClasses = [
-  'from-[#6B7F4C] to-[#8B7355]',
-  'from-[#4C737F] to-[#789CA8]',
-  'from-[#7F6B4C] to-[#A89268]',
-  'from-[#664C7F] to-[#9278A8]',
-  'from-[#4C7F7A] to-[#78A8A2]',
-  'from-[#7F4C4C] to-[#A86868]',
-  'from-[#556339] to-[#7F8C5F]',
-  'from-[#8B7355] to-[#D4C5A8]',
+const seriesColorClasses = [
+  'bg-[#6B7F4C]',
+  'bg-[#4C737F]',
+  'bg-[#7F6B4C]',
+  'bg-[#664C7F]',
+  'bg-[#4C7F7A]',
+  'bg-[#7F4C4C]',
+  'bg-[#556339]',
+  'bg-[#8B7355]',
 ];
+
+const LIBRARY_PAGE_SIZE = 24;
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -33,9 +35,9 @@ function normalizeText(value: string) {
   return value.trim().replace(/\s+/g, ' ');
 }
 
-function getSeriesGradient(series: string) {
+function getSeriesColor(series: string) {
   const total = Array.from(series).reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return gradientClasses[total % gradientClasses.length];
+  return seriesColorClasses[total % seriesColorClasses.length];
 }
 
 function cleanSeriesTitle(series: string, year: number) {
@@ -162,33 +164,32 @@ function SeriesArtwork({ sermon, compact = false }: { sermon: Sermon; compact?: 
   const trackLabel = getTrackLabel(sermon.title);
 
   return (
-    <div className={`teaching-artwork relative overflow-hidden ${compact ? 'h-24 rounded-lg' : 'h-48'} bg-gradient-to-br ${getSeriesGradient(sermon.series)}`}>
-      <div className="absolute top-3 left-3 z-20 bg-black/50 text-white/90 font-bold text-xs px-2.5 py-1 rounded-full border border-white/20">
-        {sermon.year}
-      </div>
-      {trackLabel && (
-        <div className="absolute top-3 right-3 z-20 bg-black/50 text-white font-bold text-xs px-2.5 py-1 rounded-full border border-white/20">
-          {trackLabel}
-        </div>
-      )}
-      <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-        <div className="relative z-10 w-full">
-          <span className="text-white/60 text-[10px] font-bold tracking-widest uppercase mb-2 block border border-white/20 rounded-full px-2 py-0.5 w-fit mx-auto bg-black/20">
-          {cleanSeriesTitle(sermon.series, sermon.year)}
+    <div className={`teaching-artwork flex flex-col ${compact ? 'min-h-[6rem] rounded-lg p-3' : 'min-h-[11rem] p-4'} ${getSeriesColor(sermon.series)}`}>
+      <div className="flex items-start justify-between gap-2">
+        <span className="bg-black/45 text-white/90 font-bold text-xs px-2.5 py-1 rounded-full border border-white/20">
+          {sermon.year}
+        </span>
+        {trackLabel ? (
+          <span className="bg-black/45 text-white font-bold text-xs px-2.5 py-1 rounded-full border border-white/20">
+            {trackLabel}
           </span>
-          <h3 className={`${compact ? 'text-base' : 'text-lg md:text-xl'} font-bold text-white mb-3 leading-tight shadow-sm line-clamp-3 px-2`}>
-            {normalizeText(sermon.title)}
-          </h3>
-          {!compact && (
-            <>
-              <div className="w-8 h-0.5 bg-white/40 mx-auto rounded-full mb-2" />
-              <p className="text-white/90 text-[10px] font-medium tracking-wide">{sermon.speaker || DEFAULT_SPEAKER}</p>
-            </>
-          )}
-        </div>
+        ) : (
+          <span />
+        )}
       </div>
-      <div className="absolute inset-0 bg-black/10" />
-      <div className="absolute -bottom-8 -right-8 w-24 h-24 rounded-full bg-white/5" />
+      <div className="mt-3 flex flex-1 flex-col items-center justify-center text-center">
+        <span className="text-white/70 text-[10px] font-bold tracking-widest uppercase mb-2 border border-white/20 rounded-full px-2 py-0.5 bg-black/25">
+          {cleanSeriesTitle(sermon.series, sermon.year)}
+        </span>
+        <h3 className={`${compact ? 'text-base' : 'text-lg md:text-xl'} font-bold text-white mb-2 leading-tight line-clamp-3 px-1`}>
+          {normalizeText(sermon.title)}
+        </h3>
+        {!compact && (
+          <p className="text-white/90 text-[10px] font-medium tracking-wide">
+            {sermon.speaker || DEFAULT_SPEAKER}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -205,26 +206,14 @@ function TeachingCard({
   copied: boolean;
 }) {
   return (
-    <article className="teaching-card group overflow-hidden rounded-xl border border-white/10 bg-dark-card transition-colors hover:border-primary/40">
-      <div className="relative">
-        <SeriesArtwork sermon={sermon} />
-        <button
-          type="button"
-          onClick={() => onPlay(sermon)}
-          className="teaching-play-overlay absolute inset-0 z-20 flex items-center justify-center bg-dark/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-          aria-label={`Listen to ${cleanSermonTitle(sermon)}`}
-        >
-          <span className="teaching-play-button flex w-14 h-14 scale-50 items-center justify-center rounded-full bg-primary text-dark shadow-lg transition-transform duration-300 group-hover:scale-100">
-            <PlayIcon className="w-6 h-6 ml-0.5" />
-          </span>
-        </button>
-      </div>
+    <article className="teaching-card rounded-xl border border-white/10 bg-dark-card">
+      <SeriesArtwork sermon={sermon} />
       <div className="p-4 bg-dark-lighter">
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => onPlay(sermon)}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-bold text-dark transition-colors hover:bg-primary-light"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-bold text-dark"
           >
             <PlayIcon className="h-4 w-4" />
             Listen
@@ -232,7 +221,7 @@ function TeachingCard({
           <a
             href={sermon.audioUrl}
             download
-            className="inline-flex items-center justify-center rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold text-white/70 transition-colors hover:border-primary/40 hover:text-white"
+            className="inline-flex items-center justify-center rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold text-white/70"
             aria-label={`Download ${cleanSermonTitle(sermon)}`}
           >
             <DownloadIcon />
@@ -240,7 +229,7 @@ function TeachingCard({
           <button
             type="button"
             onClick={() => onCopy(sermon)}
-            className="inline-flex items-center justify-center rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold text-white/70 transition-colors hover:border-primary/40 hover:text-white"
+            className="inline-flex items-center justify-center rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold text-white/70"
             aria-label={`Copy branded link for ${cleanSermonTitle(sermon)}`}
             title={copied ? 'Copied' : 'Copy link'}
           >
@@ -265,11 +254,11 @@ function PopularSeriesCard({
     <button
       type="button"
       onClick={() => onOpen(group.key)}
-      className={`rounded-xl border p-5 text-left transition-colors hover:border-primary/40 ${
+      className={`rounded-xl border p-5 text-left ${
         isExpanded ? 'border-primary/50 bg-primary/10' : 'border-white/10 bg-dark-card'
       }`}
     >
-      <div className={`mb-4 h-2 rounded-full bg-gradient-to-r ${getSeriesGradient(group.series)}`} />
+      <div className={`mb-4 h-2 rounded-full ${getSeriesColor(group.series)}`} />
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-primary text-xs font-bold uppercase tracking-[0.18em]">{group.year}</p>
@@ -376,26 +365,23 @@ function LibrarySeriesRow({
   copiedSermonId: string | null;
 }) {
   return (
-    <div className={`teaching-library-row overflow-hidden rounded-2xl border transition-colors duration-300 ${
-      expanded ? 'border-primary/30 bg-dark-card shadow-lg shadow-primary/5' : 'border-white/10 bg-dark-card hover:border-white/20'
+    <div className={`teaching-library-row rounded-2xl border ${
+      expanded ? 'border-primary/30 bg-dark-card' : 'border-white/10 bg-dark-card'
     }`}>
       <button
         type="button"
         onClick={() => onToggle(group.key)}
         className="w-full text-left"
       >
-        {/* Gradient accent strip — always visible, acts as visual identity for the series */}
-        <div className={`h-1.5 w-full bg-gradient-to-r ${getSeriesGradient(group.series)} ${expanded ? 'opacity-100' : 'opacity-60'} transition-opacity`} />
+        <div className={`h-1.5 w-full ${getSeriesColor(group.series)}`} />
 
         <div className="flex items-center gap-3 px-4 py-4 sm:gap-4 sm:px-5 sm:py-5">
-          {/* Series icon badge */}
-          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${getSeriesGradient(group.series)} shadow-lg`}>
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${getSeriesColor(group.series)}`}>
             <svg className="h-5 w-5 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
           </div>
 
-          {/* Text content — takes full remaining width */}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary sm:px-2.5 sm:py-1 sm:text-xs">
@@ -408,12 +394,11 @@ function LibrarySeriesRow({
             <h3 className="mt-1.5 text-base font-bold leading-snug text-white sm:text-lg">{group.displaySeries}</h3>
           </div>
 
-          {/* Expand/collapse chevron */}
-          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
+          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
             expanded ? 'bg-primary/15 text-primary' : 'bg-white/5 text-white/40'
           }`}>
             <svg
-              className={`h-4 w-4 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
+              className={`h-4 w-4 ${expanded ? 'rotate-180' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -512,6 +497,7 @@ export default function TeachingsPage() {
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
   const [activeSermon, setActiveSermon] = useState<IndexedSermon | null>(null);
   const [copiedSermonId, setCopiedSermonId] = useState<string | null>(null);
+  const [libraryVisibleCount, setLibraryVisibleCount] = useState(LIBRARY_PAGE_SIZE);
 
   const indexedSermons = useMemo<IndexedSermon[]>(
     () => sermons.map((sermon, originalIndex) => ({ ...sermon, originalIndex })),
@@ -555,6 +541,11 @@ export default function TeachingsPage() {
     return rotateWeekly(strongestSeries, 6);
   }, [seriesGroups]);
 
+  const visibleSeriesGroups = useMemo(
+    () => seriesGroups.slice(0, libraryVisibleCount),
+    [seriesGroups, libraryVisibleCount]
+  );
+
   const toggleSeries = (key: string) => {
     setExpandedSeries((current) => {
       const next = new Set(current);
@@ -568,8 +559,14 @@ export default function TeachingsPage() {
   };
 
   const openSeries = (key: string) => {
+    const index = seriesGroups.findIndex((group) => group.key === key);
+    if (index >= libraryVisibleCount) {
+      setLibraryVisibleCount(index + 1);
+    }
     setExpandedSeries((current) => new Set(current).add(key));
-    document.getElementById('teaching-library')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.setTimeout(() => {
+      document.getElementById('teaching-library')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
   };
 
   const copyBrandedLink = async (sermon: IndexedSermon) => {
@@ -585,6 +582,16 @@ export default function TeachingsPage() {
     }
   };
 
+  const handleYearChange = (year: number | 'all') => {
+    setSelectedYear(year);
+    setLibraryVisibleCount(LIBRARY_PAGE_SIZE);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setLibraryVisibleCount(LIBRARY_PAGE_SIZE);
+  };
+
   return (
     <div className={`teachings-page min-h-screen bg-dark pt-20 ${activeSermon ? 'pb-36' : ''}`}>
       <header className="border-b border-primary/10 bg-dark-lighter py-16">
@@ -593,7 +600,7 @@ export default function TeachingsPage() {
             <p className="text-primary text-xs font-bold uppercase tracking-[0.24em]">Audio Library</p>
             <h1 className="mt-4 text-4xl font-bold leading-tight md:text-6xl">
               <span className="text-white">Teachings </span>
-              <span className="gradient-text">and Songs</span>
+              <span className="text-primary">and Songs</span>
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-relaxed text-white/60">
               Explore sermons, conference teachings, worship recordings, and series from Pastor Stephen Tijesuni Oyagbile.
@@ -602,7 +609,7 @@ export default function TeachingsPage() {
         </div>
       </header>
 
-      <section className="border-b border-primary/10 bg-dark-lighter/50 py-6">
+      <section className="border-b border-primary/10 bg-dark-lighter py-6">
         <div className="container-custom">
           <div className="grid gap-4 lg:grid-cols-[minmax(260px,420px)_1fr] lg:items-start">
             <div>
@@ -612,8 +619,8 @@ export default function TeachingsPage() {
                 type="text"
                 placeholder="Search by title, series, speaker, or year..."
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-dark px-4 py-3 text-white placeholder-white/40 outline-none transition-colors focus:border-primary"
+                onChange={(event) => handleSearchChange(event.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-dark px-4 py-3 text-white placeholder-white/40 outline-none focus:border-primary"
               />
               <p className="mt-3 text-sm text-white/55">
                 {filteredSermons.length} {filteredSermons.length === 1 ? 'message' : 'messages'} • {seriesGroups.length} {seriesGroups.length === 1 ? 'series' : 'series'}
@@ -623,11 +630,11 @@ export default function TeachingsPage() {
             <div className="flex flex-wrap gap-2 lg:justify-end">
               <button
                 type="button"
-                onClick={() => setSelectedYear('all')}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+                onClick={() => handleYearChange('all')}
+                className={`rounded-lg px-4 py-2 text-sm font-semibold ${
                   selectedYear === 'all'
                     ? 'bg-primary text-dark'
-                    : 'border border-white/10 bg-dark text-white/60 hover:border-primary/30 hover:text-white'
+                    : 'border border-white/10 bg-dark text-white/60'
                 }`}
               >
                 All Years
@@ -636,11 +643,11 @@ export default function TeachingsPage() {
                 <button
                   key={year}
                   type="button"
-                  onClick={() => setSelectedYear(year)}
-                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+                  onClick={() => handleYearChange(year)}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold ${
                     selectedYear === year
                       ? 'bg-primary text-dark'
-                      : 'border border-white/10 bg-dark text-white/60 hover:border-primary/30 hover:text-white'
+                      : 'border border-white/10 bg-dark text-white/60'
                   }`}
                 >
                   {year}
@@ -688,7 +695,7 @@ export default function TeachingsPage() {
         <section id="teaching-library" className="scroll-mt-28">
           <SectionHeader eyebrow="Full archive" title="Browse by Series" />
           <div className="mt-6 space-y-4">
-            {seriesGroups.map((group) => (
+            {visibleSeriesGroups.map((group) => (
               <LibrarySeriesRow
                 key={group.key}
                 group={group}
@@ -700,6 +707,17 @@ export default function TeachingsPage() {
               />
             ))}
           </div>
+          {libraryVisibleCount < seriesGroups.length && (
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setLibraryVisibleCount((count) => count + LIBRARY_PAGE_SIZE)}
+                className="rounded-lg border border-white/10 bg-dark-card px-5 py-3 text-sm font-semibold text-white"
+              >
+                Show more series ({seriesGroups.length - libraryVisibleCount} remaining)
+              </button>
+            </div>
+          )}
         </section>
 
         {filteredSermons.length === 0 && (
