@@ -1,4 +1,5 @@
 import Hero from "@/components/home/Hero";
+import LiveBanner from "@/components/home/LiveBanner";
 import Programmes from "@/components/home/Programmes";
 import About from "@/components/home/About";
 import RadioBroadcast from "@/components/home/RadioBroadcast";
@@ -10,6 +11,7 @@ export default function Home() {
     return (
         <>
             <Hero />
+            <LiveBanner />
             <Programmes />
             <About />
             <RadioBroadcast />

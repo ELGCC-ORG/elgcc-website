@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { liveConfig } from '@/lib/live';
 
 export default function Navigation() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -10,6 +11,7 @@ export default function Navigation() {
         { name: 'HOME', href: '/' },
         { name: 'ABOUT', href: '#about' },
         { name: 'TOS 2026', href: '/register/tos2026', highlight: true },
+        { name: 'LIVE', href: '/live', live: true as const },
         { name: 'TEACHINGS', href: '/teachings' },
         { name: 'SPECIAL PROGRAMMES', href: '/programmes' },
         { name: 'LOCATIONS', href: '/locations' },
@@ -36,15 +38,20 @@ export default function Navigation() {
                     <div className="hidden lg:flex items-center lg:space-x-4 xl:space-x-6 2xl:space-x-8">
                         {navLinks.map((link) => (
                             <Link
-                                key={link.name}
+                                key={link.name + link.href}
                                 href={link.href}
                                 className={
-                                    link.highlight
+                                    link.live && liveConfig.isLive
+                                        ? "lg:text-xs xl:text-sm font-semibold text-red-400 hover:text-red-300 transition-colors duration-300 tracking-wide flex items-center gap-1 shrink-0"
+                                        : link.highlight
                                         ? "lg:text-xs xl:text-sm font-semibold text-[#D4A843] hover:text-[#F0D78C] transition-colors duration-300 tracking-wide flex items-center gap-1 shrink-0"
                                         : "lg:text-xs xl:text-sm font-medium text-white/80 hover:text-primary transition-colors duration-300 tracking-wide shrink-0"
                                 }
                             >
                                 {link.highlight && <span className="animate-pulse">🔥</span>}
+                                {link.live && liveConfig.isLive && (
+                                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
+                                )}
                                 {link.name}
                             </Link>
                         ))}
@@ -94,16 +101,21 @@ export default function Navigation() {
                         <div className="flex flex-col space-y-4">
                             {navLinks.map((link) => (
                                 <Link
-                                    key={link.name}
+                                    key={link.name + link.href}
                                     href={link.href}
                                     onClick={() => setIsMenuOpen(false)}
                                     className={
-                                        link.highlight
+                                        link.live && liveConfig.isLive
+                                            ? "text-sm font-semibold text-red-400 hover:text-red-300 transition-colors duration-300 tracking-wide flex items-center gap-1"
+                                            : link.highlight
                                             ? "text-sm font-semibold text-[#D4A843] hover:text-[#F0D78C] transition-colors duration-300 tracking-wide flex items-center gap-1"
                                             : "text-sm font-medium text-white/80 hover:text-primary transition-colors duration-300 tracking-wide"
                                     }
                                 >
                                     {link.highlight && <span className="animate-pulse">🔥</span>}
+                                    {link.live && liveConfig.isLive && (
+                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
+                                    )}
                                     {link.name}
                                 </Link>
                             ))}
