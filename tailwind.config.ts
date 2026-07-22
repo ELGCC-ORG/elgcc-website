@@ -45,11 +45,21 @@ const config: Config = {
                 'scale-in': {
                     '0%': { opacity: '0', transform: 'scale(0.95)' },
                     '100%': { opacity: '1', transform: 'scale(1)' },
-                }
+                },
+                'live-glow': {
+                    '0%, 100%': { opacity: '1' },
+                    '50%': { opacity: '0.55' },
+                },
+                'live-soft': {
+                    '0%, 100%': { opacity: '1' },
+                    '50%': { opacity: '0.7' },
+                },
             },
             animation: {
                 'fade-in': 'fade-in 0.3s ease-out forwards',
                 'scale-in': 'scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                'live-glow': 'live-glow 1.4s ease-in-out infinite',
+                'live-soft': 'live-soft 2.2s ease-in-out infinite',
             },
         },
     },

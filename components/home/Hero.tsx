@@ -66,8 +66,8 @@ export default function Hero() {
                         <Link href="#programmes" className="btn-primary shadow-xl hover:shadow-primary/20">
                             FELLOWSHIP WITH US
                         </Link>
-                        <Link href="/teachings" className="btn-secondary shadow-xl hover:bg-white/10 backdrop-blur-md">
-                            LISTEN TO TEACHINGS
+                        <Link href="/live" className="btn-secondary shadow-xl hover:bg-white/10">
+                            WATCH LIVE
                         </Link>
                     </div>
 

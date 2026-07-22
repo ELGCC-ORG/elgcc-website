@@ -10,7 +10,6 @@ export default function Navigation() {
     const navLinks = [
         { name: 'HOME', href: '/' },
         { name: 'ABOUT', href: '#about' },
-        { name: 'TOS 2026', href: '/register/tos2026', highlight: true },
         { name: 'LIVE', href: '/live', live: true as const },
         { name: 'TEACHINGS', href: '/teachings' },
         { name: 'SPECIAL PROGRAMMES', href: '/programmes' },
@@ -18,6 +17,10 @@ export default function Navigation() {
         { name: 'PARTNERSHIP', href: '/partnership' },
         { name: 'CONTACT US', href: '/contact' },
     ];
+
+    const liveLinkClass = liveConfig.isLive
+        ? 'font-semibold text-red-400 hover:text-red-300 animate-live-glow'
+        : 'font-semibold text-primary-light hover:text-primary animate-live-soft';
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-dark border-b border-primary/10">
@@ -33,7 +36,7 @@ export default function Navigation() {
                             />
                         </div>
                     </Link>
- 
+
                     {/* Desktop Navigation */}
                     <div className="hidden lg:flex items-center lg:space-x-4 xl:space-x-6 2xl:space-x-8">
                         {navLinks.map((link) => (
@@ -41,16 +44,16 @@ export default function Navigation() {
                                 key={link.name + link.href}
                                 href={link.href}
                                 className={
-                                    link.live && liveConfig.isLive
-                                        ? "lg:text-xs xl:text-sm font-semibold text-red-400 hover:text-red-300 transition-colors duration-300 tracking-wide flex items-center gap-1 shrink-0"
-                                        : link.highlight
-                                        ? "lg:text-xs xl:text-sm font-semibold text-[#D4A843] hover:text-[#F0D78C] transition-colors duration-300 tracking-wide flex items-center gap-1 shrink-0"
-                                        : "lg:text-xs xl:text-sm font-medium text-white/80 hover:text-primary transition-colors duration-300 tracking-wide shrink-0"
+                                    link.live
+                                        ? `lg:text-xs xl:text-sm tracking-wide flex items-center gap-1.5 shrink-0 ${liveLinkClass}`
+                                        : 'lg:text-xs xl:text-sm font-medium text-white/80 hover:text-primary transition-colors duration-300 tracking-wide shrink-0'
                                 }
                             >
-                                {link.highlight && <span className="animate-pulse">🔥</span>}
-                                {link.live && liveConfig.isLive && (
-                                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
+                                {link.live && (
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                                        <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                                    </span>
                                 )}
                                 {link.name}
                             </Link>
@@ -105,16 +108,16 @@ export default function Navigation() {
                                     href={link.href}
                                     onClick={() => setIsMenuOpen(false)}
                                     className={
-                                        link.live && liveConfig.isLive
-                                            ? "text-sm font-semibold text-red-400 hover:text-red-300 transition-colors duration-300 tracking-wide flex items-center gap-1"
-                                            : link.highlight
-                                            ? "text-sm font-semibold text-[#D4A843] hover:text-[#F0D78C] transition-colors duration-300 tracking-wide flex items-center gap-1"
-                                            : "text-sm font-medium text-white/80 hover:text-primary transition-colors duration-300 tracking-wide"
+                                        link.live
+                                            ? `text-sm tracking-wide flex items-center gap-1.5 ${liveLinkClass}`
+                                            : 'text-sm font-medium text-white/80 hover:text-primary transition-colors duration-300 tracking-wide'
                                     }
                                 >
-                                    {link.highlight && <span className="animate-pulse">🔥</span>}
-                                    {link.live && liveConfig.isLive && (
-                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
+                                    {link.live && (
+                                        <span className="relative flex h-2 w-2">
+                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                                            <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                                        </span>
                                     )}
                                     {link.name}
                                 </Link>

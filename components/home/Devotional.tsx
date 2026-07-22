@@ -65,22 +65,20 @@ export default function Devotional() {
 
                         {/* Image/Visual Side */}
                         <div className="order-1 lg:order-2 flex justify-center lg:justify-end relative">
-                            {/* Decorative glow behind book */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-[#fbc2eb]/10 to-[#a6c1ee]/10 blur-3xl rounded-full z-0"></div>
-
-                            <div className="relative z-10 w-full max-w-[400px] aspect-[4/5] bg-dark-lighter border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center justify-center overflow-hidden group">
-                                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-dark/80 z-10 pointer-events-none"></div>
-
-                                <div className="text-center px-8 relative z-20">
-                                    <h3 className="text-3xl font-bold text-white mb-2 font-serif group-hover:scale-105 transition-transform duration-500">Awaken the Dawn</h3>
-                                    <p className="text-primary-light/80 italic text-sm mb-6">Stephen Tijesuni Oyagbile</p>
-                                    <span className="inline-block px-4 py-2 bg-red-600 text-white font-bold rounded-full transform rotate-3 shadow-xl">
+                            <div className="relative z-10 w-full max-w-[400px] aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-dark shadow-2xl">
+                                <Image
+                                    src="/images/awaken.jpeg"
+                                    alt="Awaken the Dawn Devotional by Stephen Tijesuni Oyagbile"
+                                    fill
+                                    className="object-cover object-center"
+                                    sizes="(max-width: 1024px) 90vw, 400px"
+                                    priority={false}
+                                />
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-5">
+                                    <span className="inline-block bg-red-600 px-4 py-2 text-sm font-bold text-white">
                                         ₦8,000
                                     </span>
                                 </div>
-
-                                {/* Abstract book motif background */}
-                                <div className="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAzNHYtbDItMiAydjRIMzZ6bS0yaDR2NEgzNHYtNHptLTIwaC00djRoNHYtNHptNC00aC00djRoNHYtNHptMC0xMGgtNHY0aDR2LTR6bS00IDRoNHY0aC00di00em0tNCAyaTR2NGgtNHYtNHptNCAyaTR2NGgtNHYtNHptNC00aDR2NGgtNHYtNHptMTIgMTZoNHY0aC00di00em00IDJoNHY0aC00di00em0tMjAgOGg0djRoLTR2LTR6bS00IDJoNHY0aC00di00em0tNCAyaTR2NGgtNHYtNHptOC00aDR2NGgtNHYtNHptNCAyaDR2NGgtNHYtNHptMTIgMTZoNHY0aC00di00em00IDJoNHY0aC00di00em0tMjAgOGg0djRoLTR2LTR6bS00IDJoNHY0aC00di00eiIgZmlsbD0iI2ZmZmZmZiIvPjwvZz48L3N2Zz4=')]"></div>
                             </div>
                         </div>
                     </div>
