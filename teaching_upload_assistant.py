@@ -132,7 +132,7 @@ def write_sermons(sermons):
     SERMONS_FILE.write_text(json.dumps(sermons, indent=2) + "\n", encoding="utf-8")
 
 
-def is_duplicate(existing, draft):
+def is_duplicate(existing, draft, allow_unavailable_revive=False):
     draft_title = normalize_text(draft["title"]).lower()
     draft_series = normalize_text(draft["series"]).lower()
     draft_audio_url = normalize_text(draft["audioUrl"]).lower()
@@ -147,8 +147,26 @@ def is_duplicate(existing, draft):
         )
         same_archive_file = draft_archive_file and archive_file_name(sermon.get("audioUrl", "")) == draft_archive_file
         if same_audio or same_teaching or same_archive_file:
+            if allow_unavailable_revive and sermon.get("unavailable") and same_teaching:
+                continue
             return True
     return False
+
+
+def find_unavailable_match(existing, draft):
+    draft_title = normalize_text(draft["title"]).lower()
+    draft_series = normalize_text(draft["series"]).lower()
+    for sermon in existing:
+        if not sermon.get("unavailable"):
+            continue
+        same_teaching = (
+            int(sermon.get("year", 0)) == int(draft["year"])
+            and normalize_text(sermon.get("series")).lower() == draft_series
+            and normalize_text(sermon.get("title")).lower() == draft_title
+        )
+        if same_teaching:
+            return sermon
+    return None
 
 
 @dataclass
@@ -469,7 +487,11 @@ class TeachingUploadAssistant:
                         "uploadedAt": datetime.now(timezone.utc).isoformat(),
                     }
 
-                    if is_duplicate(existing + drafts, draft):
+                    revive = find_unavailable_match(existing, draft)
+                    if revive:
+                        draft["id"] = revive["id"]
+                        draft["_revive"] = True
+                    elif is_duplicate(existing + drafts, draft, allow_unavailable_revive=True):
                         raise RuntimeError(f"Duplicate blocked: {entry.title}")
 
                     self.set_entry_status(index, "Uploading (0%)")
@@ -481,7 +503,25 @@ class TeachingUploadAssistant:
             wrote_data = False
             if drafts:
                 self.set_status("Updating website teaching data...")
-                write_sermons(existing + drafts)
+                merged = list(existing)
+                by_id = {sermon.get("id"): sermon for sermon in merged}
+                new_drafts = []
+                for draft in drafts:
+                    revive = draft.pop("_revive", False)
+                    if revive and draft["id"] in by_id:
+                        target = by_id[draft["id"]]
+                        target["title"] = draft["title"]
+                        target["audioUrl"] = draft["audioUrl"]
+                        target["series"] = draft["series"]
+                        target["year"] = draft["year"]
+                        target["speaker"] = draft["speaker"]
+                        target["archiveItem"] = draft["archiveItem"]
+                        target["uploadedAt"] = draft["uploadedAt"]
+                        target.pop("unavailable", None)
+                        target.pop("unavailableReason", None)
+                    else:
+                        new_drafts.append(draft)
+                write_sermons(merged + new_drafts)
                 self.root.after(0, lambda: self.refresh_series_options(silent=True))
                 wrote_data = True
 

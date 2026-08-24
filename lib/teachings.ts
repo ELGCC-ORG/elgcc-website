@@ -11,6 +11,9 @@ export interface Sermon {
   speaker?: string;
   archiveItem?: string;
   uploadedAt?: string;
+  /** Hidden from the public library when the Archive.org file is missing. */
+  unavailable?: boolean;
+  unavailableReason?: string;
 }
 
 export interface SermonDraft {
@@ -29,7 +32,10 @@ export const DEFAULT_SPEAKER = 'Stephen Tijesuni Oyagbile';
 export const ARCHIVE_COLLECTION = 'opensource_audio';
 export const ARCHIVE_CREATOR = 'Eternal Life Global Community Church';
 
-export const sermons = sermonsData as Sermon[];
+export const allSermons = sermonsData as Sermon[];
+
+/** Public teachings only — excludes entries whose audio is missing on Archive.org. */
+export const sermons = allSermons.filter((sermon) => !sermon.unavailable);
 
 export function normalizeTeachingText(value: string) {
   return value.trim().replace(/\s+/g, ' ');

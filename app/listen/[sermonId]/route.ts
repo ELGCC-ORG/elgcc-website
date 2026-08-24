@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sermons } from '@/lib/teachings';
+import { allSermons } from '@/lib/teachings';
 
 interface ListenRouteProps {
   params: {
@@ -9,9 +9,9 @@ interface ListenRouteProps {
 
 export function GET(req: NextRequest, { params }: ListenRouteProps) {
   const sermonId = decodeURIComponent(params.sermonId);
-  const sermon = sermons.find((item) => item.id === sermonId);
+  const sermon = allSermons.find((item) => item.id === sermonId);
 
-  if (!sermon) {
+  if (!sermon || sermon.unavailable) {
     return NextResponse.redirect(new URL('/teachings', req.url), 302);
   }
 
