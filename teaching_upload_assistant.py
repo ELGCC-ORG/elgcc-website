@@ -5,10 +5,10 @@ import subprocess
 import sys
 import tempfile
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from tkinter import BOTH, END, LEFT, RIGHT, VERTICAL, W, X, Button, Checkbutton, Entry, Frame, Label, StringVar, Tk, Toplevel, filedialog, messagebox
+from tkinter import BOTH, END, LEFT, RIGHT, VERTICAL, W, X, DoubleVar, StringVar, Tk, Toplevel, filedialog, messagebox
 from tkinter import ttk
 from urllib.parse import quote, unquote, urlparse
 
@@ -20,6 +20,11 @@ DEFAULT_SPEAKER = "Stephen Tijesuni Oyagbile"
 ARCHIVE_CREATOR = "Eternal Life Global Community Church"
 ARCHIVE_COLLECTION = "opensource_audio"
 ALLOWED_EXTENSIONS = {".mp3", ".m4a"}
+BRAND_GREEN = "#6B7F4C"
+BRAND_GOLD = "#D1A129"
+BACKGROUND = "#F3F5F0"
+TEXT = "#232722"
+MUTED = "#697268"
 
 
 def normalize_text(value):
@@ -169,6 +174,14 @@ def find_unavailable_match(existing, draft):
     return None
 
 
+def valid_year(value):
+    try:
+        year = int(value)
+    except (TypeError, ValueError):
+        return None
+    return year if 1900 <= year <= 2200 else None
+
+
 @dataclass
 class UploadEntry:
     path: Path
@@ -177,103 +190,294 @@ class UploadEntry:
     year: int
     speaker: str
     status: str = "Ready"
+    overrides: set = field(default_factory=set)
+
+
+def review_uploads(entries, existing):
+    statuses = []
+    planned = []
+    used_names = set()
+
+    for entry in entries:
+        if not entry.path.is_file():
+            statuses.append("File missing")
+            continue
+        if entry.path.suffix.lower() not in ALLOWED_EXTENSIONS:
+            statuses.append("Unsupported file")
+            continue
+        if valid_year(entry.year) is None:
+            statuses.append("Check year")
+            continue
+        if not normalize_text(entry.title):
+            statuses.append("Add title")
+            continue
+        if not normalize_text(entry.series):
+            statuses.append("Add series")
+            continue
+
+        clean_name = safe_file_name(entry.title, entry.path.suffix)
+        base, suffix = Path(clean_name).stem, Path(clean_name).suffix
+        counter = 2
+        while clean_name.lower() in used_names:
+            clean_name = f"{base} {counter}{suffix}"
+            counter += 1
+
+        item = archive_item_for_year(entry.year)
+        draft = {
+            "title": normalize_text(entry.title),
+            "series": normalize_text(entry.series),
+            "year": entry.year,
+            "audioUrl": f"https://archive.org/download/{item}/{quote(clean_name)}",
+        }
+        if is_duplicate(planned, draft):
+            statuses.append("Duplicate in batch")
+        elif is_duplicate(existing, draft, allow_unavailable_revive=True):
+            statuses.append("Already on website")
+        else:
+            statuses.append("Restore existing" if find_unavailable_match(existing, draft) else "Ready")
+            planned.append(draft)
+            used_names.add(clean_name.lower())
+
+    return statuses
 
 
 class TeachingUploadAssistant:
     def __init__(self, root):
         self.root = root
         self.root.title("ELGCC Teaching Upload Assistant")
-        self.root.geometry("1120x720")
+        self.root.geometry("1220x790")
+        self.root.minsize(980, 650)
         self.entries = []
         self.series_var = StringVar(value="")
         self.year_var = StringVar(value=str(datetime.now().year))
         self.speaker_var = StringVar(value=DEFAULT_SPEAKER)
         self.password_var = StringVar(value="")
         self.allow_push_var = StringVar(value="0")
-        self.status_var = StringVar(value="Choose audio files to begin.")
-        self.series_options = load_existing_series()
+        self.search_var = StringVar(value="")
+        self.summary_var = StringVar(value="No audio files selected")
+        self.status_var = StringVar(value="Choose files or a folder to begin.")
+        self.stage_var = StringVar(value="Ready")
+        self.progress_var = DoubleVar(value=0)
+        self.existing_sermons = load_sermons()
+        self.series_options = available_series_from_sermons(self.existing_sermons)
         self.uploading = False
+        self.mutable_widgets = []
 
         self.expected_password = os.environ.get("TEACHING_UPLOADER_PASSWORD", "")
         self.allow_push = os.environ.get("TEACHING_UPLOADER_ALLOW_PUSH", "") == "1"
 
         self.build_ui()
+        self.root.protocol("WM_DELETE_WINDOW", self.close_window)
+        for variable in (self.year_var, self.series_var, self.speaker_var):
+            variable.trace_add("write", self.on_batch_change)
+        self.search_var.trace_add("write", lambda *_args: self.refresh_table())
+        self.refresh_review()
 
     def build_ui(self):
-        shell = Frame(self.root, padx=18, pady=18)
+        self.root.configure(bg=BACKGROUND)
+        style = ttk.Style(self.root)
+        if "clam" in style.theme_names():
+            style.theme_use("clam")
+        style.configure("App.TFrame", background=BACKGROUND)
+        style.configure("Panel.TFrame", background="#FFFFFF")
+        style.configure("Brand.TFrame", background=BRAND_GREEN)
+        style.configure("Gold.TFrame", background=BRAND_GOLD)
+        style.configure("BrandTitle.TLabel", background=BRAND_GREEN, foreground="#FFFFFF", font=("Segoe UI", 19, "bold"))
+        style.configure("BrandSub.TLabel", background=BRAND_GREEN, foreground="#EFF4E9", font=("Segoe UI", 10))
+        style.configure("Step.TLabel", background="#FFFFFF", foreground=TEXT, font=("Segoe UI", 12, "bold"))
+        style.configure("Field.TLabel", background="#FFFFFF", foreground=TEXT, font=("Segoe UI", 9, "bold"))
+        style.configure("Hint.TLabel", background="#FFFFFF", foreground=MUTED, font=("Segoe UI", 9))
+        style.configure("Summary.TLabel", background="#FFFFFF", foreground=BRAND_GREEN, font=("Segoe UI", 10, "bold"))
+        style.configure("Status.TLabel", background="#FFFFFF", foreground=TEXT, font=("Segoe UI", 10))
+        style.configure("Primary.TButton", background=BRAND_GREEN, foreground="#FFFFFF", font=("Segoe UI", 10, "bold"), padding=(16, 9), borderwidth=0)
+        style.map("Primary.TButton", background=[("active", "#53663B"), ("disabled", "#AAB7A0")], foreground=[("disabled", "#F4F6F1")])
+        style.configure("Secondary.TButton", background="#E8EDE1", foreground=TEXT, font=("Segoe UI", 9), padding=(11, 7), borderwidth=0)
+        style.map("Secondary.TButton", background=[("active", "#D9E3D0")])
+        style.configure("Plain.TButton", background="#FFFFFF", foreground=TEXT, font=("Segoe UI", 9), padding=(9, 7), borderwidth=0)
+        style.map("Plain.TButton", background=[("active", "#F0F3EA")])
+        style.configure("Panel.TCheckbutton", background="#FFFFFF", foreground=TEXT, font=("Segoe UI", 9))
+        style.configure("Treeview", background="#FFFFFF", fieldbackground="#FFFFFF", foreground=TEXT, rowheight=31, font=("Segoe UI", 9), borderwidth=0)
+        style.configure("Treeview.Heading", background="#E9EEE2", foreground=TEXT, font=("Segoe UI", 9, "bold"), padding=(8, 7), borderwidth=0)
+        style.map("Treeview", background=[("selected", "#E2ECD7")], foreground=[("selected", TEXT)])
+        style.configure("Upload.Horizontal.TProgressbar", troughcolor="#E6ECE0", background=BRAND_GOLD, borderwidth=0)
+
+        shell = ttk.Frame(self.root, style="App.TFrame", padding=16)
         shell.pack(fill=BOTH, expand=True)
 
-        Label(shell, text="ELGCC Teaching Upload Assistant", font=("Segoe UI", 18, "bold")).pack(anchor=W)
-        Label(
-            shell,
-            text="Select teachings, set the year/series/speaker once, review titles, then upload and update the website data.",
-            fg="#444",
-        ).pack(anchor=W, pady=(4, 14))
+        header = ttk.Frame(shell, style="Brand.TFrame", padding=(20, 15))
+        header.pack(fill=X)
+        ttk.Label(header, text="Teaching Upload Assistant", style="BrandTitle.TLabel").pack(anchor=W)
+        ttk.Label(header, text="ELGCC  |  Prepare, review and publish teachings", style="BrandSub.TLabel").pack(anchor=W, pady=(3, 0))
+        ttk.Frame(shell, style="Gold.TFrame", height=3).pack(fill=X, pady=(0, 13))
 
-        top = Frame(shell)
-        top.pack(fill=X, pady=(0, 12))
-
-        Label(top, text="Year").grid(row=0, column=0, sticky=W)
-        Entry(top, textvariable=self.year_var, width=10).grid(row=1, column=0, sticky=W, padx=(0, 12))
-
-        Label(top, text="Series").grid(row=0, column=1, sticky=W)
-        self.series_combo = ttk.Combobox(top, textvariable=self.series_var, values=self.series_options, width=40)
-        self.series_combo.grid(row=1, column=1, sticky=W, padx=(0, 12))
+        details = ttk.Frame(shell, style="Panel.TFrame", padding=16)
+        details.pack(fill=X, pady=(0, 12))
+        ttk.Label(details, text="1  Batch details", style="Step.TLabel").grid(row=0, column=0, columnspan=4, sticky=W, pady=(0, 11))
+        ttk.Label(details, text="Year", style="Field.TLabel").grid(row=1, column=0, sticky=W)
+        ttk.Label(details, text="Series", style="Field.TLabel").grid(row=1, column=1, sticky=W)
+        ttk.Label(details, text="Speaker", style="Field.TLabel").grid(row=1, column=2, sticky=W)
+        self.year_entry = ttk.Entry(details, textvariable=self.year_var, width=9)
+        self.year_entry.grid(row=2, column=0, sticky="ew", padx=(0, 12), pady=(4, 0))
+        self.series_combo = ttk.Combobox(details, textvariable=self.series_var, values=self.series_options)
+        self.series_combo.grid(row=2, column=1, sticky="ew", padx=(0, 12), pady=(4, 0))
         self.series_combo.bind("<Button-1>", lambda _event: self.refresh_series_options(silent=True))
-
-        Label(top, text="Speaker").grid(row=0, column=2, sticky=W)
-        Entry(top, textvariable=self.speaker_var, width=34).grid(row=1, column=2, sticky=W, padx=(0, 12))
+        self.speaker_entry = ttk.Entry(details, textvariable=self.speaker_var)
+        self.speaker_entry.grid(row=2, column=2, sticky="ew", padx=(0, 12), pady=(4, 0))
+        ttk.Label(details, text="Choose a website series or type a new one.", style="Hint.TLabel").grid(row=3, column=1, sticky=W, pady=(5, 0))
+        self.mutable_widgets.extend((self.year_entry, self.series_combo, self.speaker_entry))
 
         if self.expected_password:
-            Label(top, text="Uploader password").grid(row=0, column=3, sticky=W)
-            Entry(top, textvariable=self.password_var, show="*", width=22).grid(row=1, column=3, sticky=W)
+            ttk.Label(details, text="Uploader password", style="Field.TLabel").grid(row=1, column=3, sticky=W)
+            self.password_entry = ttk.Entry(details, textvariable=self.password_var, show="*")
+            self.password_entry.grid(row=2, column=3, sticky="ew", pady=(4, 0))
+            self.mutable_widgets.append(self.password_entry)
+        details.columnconfigure(0, minsize=90)
+        details.columnconfigure(1, weight=3)
+        details.columnconfigure(2, weight=2)
+        details.columnconfigure(3, weight=1, minsize=170)
 
-        actions = Frame(shell)
-        actions.pack(fill=X, pady=(0, 12))
-        Button(actions, text="Choose Files", command=self.choose_files).pack(side=LEFT, padx=(0, 8))
-        Button(actions, text="Choose Folder", command=self.choose_folder).pack(side=LEFT, padx=(0, 8))
-        Button(actions, text="Apply Defaults to All", command=self.apply_defaults).pack(side=LEFT, padx=(0, 8))
-        Button(actions, text="Edit Selected", command=self.edit_selected).pack(side=LEFT, padx=(0, 8))
-        Button(actions, text="Remove Selected", command=self.remove_selected).pack(side=LEFT, padx=(0, 8))
-        Button(actions, text="Clear", command=self.clear_entries).pack(side=LEFT, padx=(0, 8))
-        Button(actions, text="Refresh Series", command=self.refresh_series_options).pack(side=LEFT, padx=(0, 8))
+        files = ttk.Frame(shell, style="Panel.TFrame", padding=16)
+        files.pack(fill=X, pady=(0, 12))
+        ttk.Label(files, text="2  Choose audio", style="Step.TLabel").pack(anchor=W, pady=(0, 10))
+        file_actions = ttk.Frame(files, style="Panel.TFrame")
+        file_actions.pack(fill=X)
+        choose_files_button = ttk.Button(file_actions, text="Choose files", command=self.choose_files, style="Secondary.TButton")
+        choose_folder_button = ttk.Button(file_actions, text="Choose folder", command=self.choose_folder, style="Secondary.TButton")
+        clear_button = ttk.Button(file_actions, text="Clear list", command=self.clear_entries, style="Plain.TButton")
+        choose_files_button.pack(side=LEFT, padx=(0, 8))
+        choose_folder_button.pack(side=LEFT, padx=(0, 8))
+        clear_button.pack(side=LEFT, padx=(0, 8))
+        ttk.Label(file_actions, text="MP3 and M4A", style="Hint.TLabel").pack(side=RIGHT)
+        self.mutable_widgets.extend((choose_files_button, choose_folder_button, clear_button))
 
-        if self.allow_push:
-            Checkbutton(actions, text="Commit and push after validation", variable=self.allow_push_var, onvalue="1", offvalue="0").pack(side=RIGHT)
+        review = ttk.Frame(shell, style="Panel.TFrame", padding=16)
+        review.pack(fill=BOTH, expand=True, pady=(0, 12))
+        review_header = ttk.Frame(review, style="Panel.TFrame")
+        review_header.pack(fill=X, pady=(0, 10))
+        ttk.Label(review_header, text="3  Review teachings", style="Step.TLabel").pack(side=LEFT)
+        ttk.Label(review_header, textvariable=self.summary_var, style="Summary.TLabel").pack(side=RIGHT)
 
-        table_frame = Frame(shell)
+        review_actions = ttk.Frame(review, style="Panel.TFrame")
+        review_actions.pack(fill=X, pady=(0, 10))
+        ttk.Label(review_actions, text="Find", style="Field.TLabel").pack(side=LEFT, padx=(0, 7))
+        self.search_entry = ttk.Entry(review_actions, textvariable=self.search_var, width=26)
+        self.search_entry.pack(side=LEFT, padx=(0, 12))
+        self.edit_button = ttk.Button(review_actions, text="Edit selected", command=self.edit_selected, style="Secondary.TButton")
+        self.remove_button = ttk.Button(review_actions, text="Remove selected", command=self.remove_selected, style="Plain.TButton")
+        apply_button = ttk.Button(review_actions, text="Apply batch details to all", command=self.apply_defaults, style="Plain.TButton")
+        refresh_button = ttk.Button(review_actions, text="Refresh series", command=self.refresh_series_options, style="Plain.TButton")
+        self.edit_button.pack(side=LEFT, padx=(0, 7))
+        self.remove_button.pack(side=LEFT, padx=(0, 7))
+        apply_button.pack(side=LEFT, padx=(0, 7))
+        refresh_button.pack(side=RIGHT)
+        self.mutable_widgets.extend((self.search_entry, self.edit_button, self.remove_button, apply_button, refresh_button))
+
+        table_frame = ttk.Frame(review, style="Panel.TFrame")
         table_frame.pack(fill=BOTH, expand=True)
-
-        columns = ("file", "title", "series", "year", "speaker", "status")
-        self.table = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="extended")
+        columns = ("title", "file", "series", "year", "speaker", "status")
+        self.table = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="extended", height=10)
         for column, width in [
-            ("file", 250),
-            ("title", 270),
-            ("series", 190),
-            ("year", 70),
-            ("speaker", 190),
-            ("status", 120),
+            ("title", 245),
+            ("file", 220),
+            ("series", 185),
+            ("year", 62),
+            ("speaker", 175),
+            ("status", 145),
         ]:
-            self.table.heading(column, text=column.title())
-            self.table.column(column, width=width, anchor=W)
+            self.table.heading(column, text=column.title(), anchor=W)
+            self.table.column(column, width=width, anchor=W, minwidth=60, stretch=column in ("title", "file", "series"))
+        self.table.tag_configure("issue", foreground="#A23F32", background="#FFF4F1")
+        self.table.tag_configure("restore", foreground="#476238", background="#F1F6EA")
+        self.table.tag_configure("done", foreground="#315B3F", background="#EEF6EF")
+        self.table.bind("<<TreeviewSelect>>", lambda _event: self.update_action_state())
+        self.table.bind("<Double-1>", lambda _event: self.edit_selected())
         scrollbar = ttk.Scrollbar(table_frame, orient=VERTICAL, command=self.table.yview)
         self.table.configure(yscrollcommand=scrollbar.set)
         self.table.pack(side=LEFT, fill=BOTH, expand=True)
         scrollbar.pack(side=RIGHT, fill="y")
 
-        bottom = Frame(shell)
-        bottom.pack(fill=X, pady=(12, 0))
-        self.status_label = Label(bottom, textvariable=self.status_var, anchor=W, fg="#333")
-        self.status_label.pack(side=LEFT, fill=X, expand=True)
-        Button(bottom, text="Validate Data", command=self.validate_data).pack(side=RIGHT, padx=(8, 0))
-        Button(bottom, text="Upload and Update Website", command=self.start_upload).pack(side=RIGHT)
+        bottom = ttk.Frame(shell, style="Panel.TFrame", padding=(16, 12))
+        bottom.pack(fill=X)
+        progress_row = ttk.Frame(bottom, style="Panel.TFrame")
+        progress_row.pack(fill=X, pady=(0, 9))
+        ttk.Label(progress_row, textvariable=self.stage_var, style="Field.TLabel").pack(side=LEFT, padx=(0, 12))
+        self.progress = ttk.Progressbar(progress_row, variable=self.progress_var, maximum=100, style="Upload.Horizontal.TProgressbar")
+        self.progress.pack(side=LEFT, fill=X, expand=True)
+        action_row = ttk.Frame(bottom, style="Panel.TFrame")
+        action_row.pack(fill=X)
+        ttk.Label(action_row, textvariable=self.status_var, style="Status.TLabel", wraplength=490).pack(side=LEFT, fill=X, expand=True)
+        if self.allow_push:
+            self.publish_check = ttk.Checkbutton(action_row, text="Publish to website after upload", variable=self.allow_push_var, onvalue="1", offvalue="0", style="Panel.TCheckbutton")
+            self.publish_check.pack(side=RIGHT, padx=(12, 0))
+            self.mutable_widgets.append(self.publish_check)
+        self.validate_button = ttk.Button(action_row, text="Check website data", command=self.validate_data, style="Plain.TButton")
+        self.validate_button.pack(side=RIGHT, padx=(8, 0))
+        self.mutable_widgets.append(self.validate_button)
+        self.upload_button = ttk.Button(action_row, text="Upload teachings", command=self.start_upload, style="Primary.TButton")
+        self.upload_button.pack(side=RIGHT, padx=(8, 0))
 
     def refresh_series_options(self, silent=False):
-        self.series_options = load_existing_series()
-        if hasattr(self, "series_combo"):
-            self.series_combo.configure(values=self.series_options)
+        if self.uploading:
+            return
+        self.existing_sermons = load_sermons()
+        self.series_options = available_series_from_sermons(self.existing_sermons)
+        self.series_combo.configure(values=self.series_options)
+        self.refresh_review()
         if not silent:
-            self.status_var.set(f"Loaded {len(self.series_options)} website series.")
+            self.status_var.set(f"Loaded {len(self.series_options)} series from the website data.")
+
+    def on_batch_change(self, *_args):
+        if self.uploading:
+            return
+        year = valid_year(self.year_var.get())
+        series = normalize_text(self.series_var.get())
+        speaker = normalize_text(self.speaker_var.get()) or DEFAULT_SPEAKER
+        for entry in self.entries:
+            if year is not None and "year" not in entry.overrides:
+                entry.year = year
+            if "series" not in entry.overrides:
+                entry.series = series
+            if "speaker" not in entry.overrides:
+                entry.speaker = speaker
+        self.refresh_review()
+
+    def refresh_review(self):
+        statuses = review_uploads(self.entries, self.existing_sermons)
+        for entry, status in zip(self.entries, statuses):
+            entry.status = status
+        ready = sum(status in ("Ready", "Restore existing") for status in statuses)
+        issues = len(statuses) - ready
+        if not self.entries:
+            self.summary_var.set("No audio files selected")
+        elif issues:
+            self.summary_var.set(f"{len(statuses)} files  |  {ready} ready  |  {issues} to fix")
+        else:
+            self.summary_var.set(f"{len(statuses)} files ready to upload")
+        self.refresh_table()
+
+    def update_action_state(self):
+        selected = bool(self.table.selection())
+        for widget in (self.edit_button, self.remove_button):
+            widget.state(["!disabled"] if selected and not self.uploading else ["disabled"])
+        can_upload = (
+            bool(self.entries)
+            and valid_year(self.year_var.get()) is not None
+            and all(entry.status in ("Ready", "Restore existing") for entry in self.entries)
+            and not self.uploading
+        )
+        self.upload_button.state(["!disabled"] if can_upload else ["disabled"])
+
+    def set_uploading_ui(self, uploading):
+        self.uploading = uploading
+        for widget in self.mutable_widgets:
+            widget.state(["disabled"] if uploading else ["!disabled"])
+        self.update_action_state()
+
+    def close_window(self):
+        if self.uploading:
+            messagebox.showwarning("Upload in progress", "Keep this window open until the upload finishes or reports an error.")
+            return
+        self.root.destroy()
 
     def choose_files(self):
         paths = filedialog.askopenfilenames(
@@ -290,10 +494,9 @@ class TeachingUploadAssistant:
         self.add_paths(paths)
 
     def add_paths(self, paths):
-        try:
-            year = int(self.year_var.get())
-        except ValueError:
-            messagebox.showerror("Invalid year", "Enter a valid four-digit year before adding files.")
+        year = valid_year(self.year_var.get())
+        if year is None:
+            messagebox.showerror("Invalid year", "Enter a year between 1900 and 2200 before adding files.")
             return
 
         series = normalize_text(self.series_var.get())
@@ -308,14 +511,16 @@ class TeachingUploadAssistant:
             current_paths.add(path.resolve())
             added += 1
 
-        self.refresh_table()
-        self.status_var.set(f"Added {added} audio file(s).")
+        self.refresh_review()
+        if added:
+            self.status_var.set(f"Added {added} audio file(s). Review their details below.")
+        elif paths:
+            self.status_var.set("No new MP3 or M4A files were added.")
 
     def apply_defaults(self):
-        try:
-            year = int(self.year_var.get())
-        except ValueError:
-            messagebox.showerror("Invalid year", "Enter a valid four-digit year.")
+        year = valid_year(self.year_var.get())
+        if year is None:
+            messagebox.showerror("Invalid year", "Enter a year between 1900 and 2200.")
             return
 
         series = normalize_text(self.series_var.get())
@@ -325,21 +530,29 @@ class TeachingUploadAssistant:
             entry.year = year
             entry.series = series
             entry.speaker = speaker
+            entry.overrides.clear()
 
-        self.refresh_table()
-        self.status_var.set("Batch defaults applied to all files.")
+        self.refresh_review()
+        self.status_var.set("Batch details applied to all files.")
 
     def edit_selected(self):
+        if self.uploading:
+            return
         selected = self.table.selection()
         if not selected:
             messagebox.showinfo("No selection", "Select one teaching to edit.")
+            return
+        if len(selected) > 1:
+            messagebox.showinfo("Select one teaching", "Select one row to edit its details.")
             return
         index = int(selected[0])
         entry = self.entries[index]
 
         dialog = Toplevel(self.root)
-        dialog.title("Edit Teaching")
-        dialog.geometry("520x260")
+        dialog.title("Edit teaching")
+        dialog.geometry("550x310")
+        dialog.resizable(False, False)
+        dialog.configure(bg=BACKGROUND)
         dialog.transient(self.root)
         dialog.grab_set()
 
@@ -348,8 +561,9 @@ class TeachingUploadAssistant:
         year_var = StringVar(value=str(entry.year))
         speaker_var = StringVar(value=entry.speaker)
 
-        form = Frame(dialog, padx=16, pady=16)
+        form = ttk.Frame(dialog, style="Panel.TFrame", padding=20)
         form.pack(fill=BOTH, expand=True)
+        form.columnconfigure(1, weight=1)
 
         for row, (label, var) in enumerate([
             ("Title", title_var),
@@ -357,47 +571,81 @@ class TeachingUploadAssistant:
             ("Year", year_var),
             ("Speaker", speaker_var),
         ]):
-            Label(form, text=label).grid(row=row, column=0, sticky=W, pady=6)
+            ttk.Label(form, text=label, style="Field.TLabel").grid(row=row, column=0, sticky=W, padx=(0, 12), pady=7)
             if label == "Series":
-                ttk.Combobox(form, textvariable=var, values=self.series_options, width=52).grid(row=row, column=1, sticky=W, pady=6)
+                ttk.Combobox(form, textvariable=var, values=self.series_options).grid(row=row, column=1, sticky="ew", pady=7)
             else:
-                Entry(form, textvariable=var, width=54).grid(row=row, column=1, sticky=W, pady=6)
+                ttk.Entry(form, textvariable=var).grid(row=row, column=1, sticky="ew", pady=7)
 
         def save():
-            try:
-                entry.year = int(year_var.get())
-            except ValueError:
-                messagebox.showerror("Invalid year", "Enter a valid four-digit year.")
+            year = valid_year(year_var.get())
+            if year is None:
+                messagebox.showerror("Invalid year", "Enter a year between 1900 and 2200.", parent=dialog)
                 return
-            entry.title = normalize_text(title_var.get())
-            entry.series = normalize_text(series_var.get())
+            title = normalize_text(title_var.get())
+            series = normalize_text(series_var.get())
+            if not title or not series:
+                messagebox.showerror("Missing details", "Enter a title and series.", parent=dialog)
+                return
+            entry.year = year
+            entry.title = title
+            entry.series = series
             entry.speaker = normalize_text(speaker_var.get()) or DEFAULT_SPEAKER
-            self.refresh_table()
+            defaults = {
+                "year": valid_year(self.year_var.get()),
+                "series": normalize_text(self.series_var.get()),
+                "speaker": normalize_text(self.speaker_var.get()) or DEFAULT_SPEAKER,
+            }
+            entry.overrides = {name for name in defaults if getattr(entry, name) != defaults[name]}
+            self.refresh_review()
+            self.status_var.set(f"Updated {entry.title}.")
             dialog.destroy()
 
-        Button(form, text="Save", command=save).grid(row=4, column=1, sticky=W, pady=(12, 0))
+        buttons = ttk.Frame(form, style="Panel.TFrame")
+        buttons.grid(row=4, column=1, sticky="e", pady=(18, 0))
+        ttk.Button(buttons, text="Cancel", command=dialog.destroy, style="Plain.TButton").pack(side=LEFT, padx=(0, 8))
+        ttk.Button(buttons, text="Save changes", command=save, style="Primary.TButton").pack(side=LEFT)
 
     def remove_selected(self):
+        if self.uploading:
+            return
         selected = sorted((int(item) for item in self.table.selection()), reverse=True)
         for index in selected:
             del self.entries[index]
-        self.refresh_table()
+        self.refresh_review()
         self.status_var.set(f"Removed {len(selected)} file(s).")
 
     def clear_entries(self):
+        if self.uploading or not self.entries:
+            return
+        if not messagebox.askyesno("Clear list", "Remove all files from this upload list?"):
+            return
         self.entries = []
-        self.refresh_table()
-        self.status_var.set("Cleared.")
+        self.progress_var.set(0)
+        self.stage_var.set("Ready")
+        self.refresh_review()
+        self.status_var.set("List cleared. Choose files or a folder to begin.")
 
     def refresh_table(self):
         self.table.delete(*self.table.get_children())
+        query = normalize_text(self.search_var.get()).lower()
         for index, entry in enumerate(self.entries):
+            searchable = " ".join((entry.title, entry.path.name, entry.series, str(entry.year), entry.speaker, entry.status)).lower()
+            if query and query not in searchable:
+                continue
+            tag = "issue" if entry.status not in ("Ready", "Restore existing", "Uploaded") and not entry.status.startswith("Uploading") and entry.status != "Preparing" else ""
+            if entry.status == "Restore existing":
+                tag = "restore"
+            elif entry.status == "Uploaded":
+                tag = "done"
             self.table.insert(
                 "",
                 END,
                 iid=str(index),
-                values=(entry.path.name, entry.title, entry.series, entry.year, entry.speaker, entry.status),
+                values=(entry.title, entry.path.name, entry.series, entry.year, entry.speaker, entry.status),
+                tags=(tag,) if tag else (),
             )
+        self.update_action_state()
 
     def validate_form(self):
         if self.expected_password and self.password_var.get() != self.expected_password:
@@ -406,12 +654,17 @@ class TeachingUploadAssistant:
         if not self.entries:
             messagebox.showerror("No files", "Choose at least one .mp3 or .m4a file.")
             return False
-        for entry in self.entries:
-            if not normalize_text(entry.title) or not normalize_text(entry.series):
-                messagebox.showerror("Missing details", "Every teaching needs a title and series.")
-                return False
-            if entry.year < 1900 or entry.year > 2200:
-                messagebox.showerror("Invalid year", "Every teaching needs a valid four-digit year.")
+        if valid_year(self.year_var.get()) is None:
+            messagebox.showerror("Invalid year", "Enter a year between 1900 and 2200.")
+            return False
+        self.existing_sermons = load_sermons()
+        self.refresh_review()
+        for index, entry in enumerate(self.entries):
+            if entry.status not in ("Ready", "Restore existing"):
+                self.search_var.set("")
+                self.table.selection_set(str(index))
+                self.table.see(str(index))
+                messagebox.showerror("Review needed", f"{entry.path.name}: {entry.status}. Fix or remove this row before uploading.")
                 return False
         return True
 
@@ -440,11 +693,25 @@ class TeachingUploadAssistant:
             return
         if not self.validate_form():
             return
-        self.uploading = True
+        years = ", ".join(str(year) for year in sorted({entry.year for entry in self.entries}))
+        publish = self.allow_push and self.allow_push_var.get() == "1"
+        action = "and publish the website" if publish else "and prepare website data for owner publish"
+        if not messagebox.askyesno("Start upload", f"Upload {len(self.entries)} teaching(s) to Archive.org for {years} {action}?"):
+            return
+        self.progress_var.set(0)
+        self.stage_var.set("Preparing files")
+        self.set_uploading_ui(True)
         threading.Thread(target=self.upload_entries, daemon=True).start()
 
     def set_status(self, text):
         self.root.after(0, lambda: self.status_var.set(text))
+
+    def set_progress(self, stage, percent):
+        def update():
+            self.stage_var.set(stage)
+            if percent is not None:
+                self.progress_var.set(max(0, min(100, percent)))
+        self.root.after(0, update)
 
     def set_entry_status(self, index, status):
         def update():
@@ -453,15 +720,25 @@ class TeachingUploadAssistant:
         self.root.after(0, update)
 
     def upload_entries(self):
+        uploaded_count = 0
+        data_valid = False
         try:
             existing = load_sermons()
+            statuses = review_uploads(self.entries, existing)
+            for entry, status in zip(self.entries, statuses):
+                if status not in ("Ready", "Restore existing"):
+                    raise RuntimeError(f"{entry.path.name}: {status}. No files were uploaded.")
+            self.set_progress("Checking website data", 1)
+            self.run_validation_or_raise()
             drafts = []
             used_names = set()
+            total = len(self.entries)
 
             with tempfile.TemporaryDirectory(prefix="elgcc-teachings-") as temp_dir:
                 stage = Path(temp_dir)
 
                 for index, entry in enumerate(self.entries):
+                    self.set_progress(f"Preparing file {index + 1} of {total}", 5 + 80 * index / total)
                     self.set_entry_status(index, "Preparing")
                     clean_name = safe_file_name(entry.title, entry.path.suffix)
                     base = Path(clean_name).stem
@@ -495,13 +772,17 @@ class TeachingUploadAssistant:
                         raise RuntimeError(f"Duplicate blocked: {entry.title}")
 
                     self.set_entry_status(index, "Uploading (0%)")
+                    self.set_progress(f"Uploading file {index + 1} of {total}", 5 + 80 * index / total)
                     queue_derive = (index == len(self.entries) - 1)
-                    self.run_archive_upload(index, stage, item, clean_name, draft["year"], draft["speaker"], queue_derive=queue_derive)
+                    self.run_archive_upload(index, stage, item, clean_name, draft["year"], draft["speaker"], total, queue_derive=queue_derive)
                     drafts.append(draft)
+                    uploaded_count += 1
                     self.set_entry_status(index, "Uploaded")
+                    self.set_progress(f"Uploaded {index + 1} of {total}", 5 + 80 * (index + 1) / total)
 
             wrote_data = False
             if drafts:
+                self.set_progress("Updating website data", 88)
                 self.set_status("Updating website teaching data...")
                 merged = list(existing)
                 by_id = {sermon.get("id"): sermon for sermon in merged}
@@ -522,9 +803,9 @@ class TeachingUploadAssistant:
                     else:
                         new_drafts.append(draft)
                 write_sermons(merged + new_drafts)
-                self.root.after(0, lambda: self.refresh_series_options(silent=True))
                 wrote_data = True
 
+            self.set_progress("Checking website data", 94)
             self.set_status("Checking website teaching data...")
             try:
                 self.run_validation_or_raise()
@@ -532,24 +813,38 @@ class TeachingUploadAssistant:
                 if wrote_data:
                     write_sermons(existing)
                 raise
+            data_valid = True
 
             if self.allow_push and self.allow_push_var.get() == "1":
+                self.set_progress("Publishing website", 97)
                 self.set_status("Publishing with git...")
                 self.git_publish()
                 final_message = "Upload complete. Website data was committed and pushed."
             else:
                 final_message = "Upload complete. Website data is ready for owner publish."
 
+            self.set_progress("Complete", 100)
             self.set_status(final_message)
+            def finish():
+                self.existing_sermons = load_sermons()
+                self.series_options = available_series_from_sermons(self.existing_sermons)
+                self.series_combo.configure(values=self.series_options)
+                self.summary_var.set(f"{len(self.entries)} teaching(s) uploaded")
+            self.root.after(0, finish)
             self.root.after(0, lambda: messagebox.showinfo("Done", final_message))
         except Exception as error:
             error_message = str(error)
-            self.set_status(f"Stopped: {error_message}")
+            if data_valid:
+                error_message += "\n\nAudio and website data are saved locally. Ask the website owner to publish; do not upload these files again."
+            elif uploaded_count:
+                error_message += f"\n\n{uploaded_count} file(s) reached Archive.org. Ask the website owner for help before retrying this batch."
+            self.set_progress("Needs attention", None)
+            self.set_status(f"Stopped: {error_message.splitlines()[0][:180]}")
             self.root.after(0, lambda: messagebox.showerror("Upload stopped", error_message))
         finally:
-            self.uploading = False
+            self.root.after(0, lambda: self.set_uploading_ui(False))
 
-    def run_archive_upload(self, index, cwd, item, file_name, year, speaker, queue_derive=True):
+    def run_archive_upload(self, index, cwd, item, file_name, year, speaker, total, queue_derive=True):
         import re
         command = [
             sys.executable,
@@ -591,8 +886,9 @@ class TeachingUploadAssistant:
                     # Look for percentage in output: e.g. " 12%|"
                     pct_match = re.search(r'(\b\d+)%', line)
                     if pct_match:
-                        pct = pct_match.group(1)
+                        pct = min(100, int(pct_match.group(1)))
                         self.set_entry_status(index, f"Uploading ({pct}%)")
+                        self.set_progress(f"Uploading file {index + 1} of {total}", 5 + 80 * (index + pct / 100) / total)
             else:
                 buffer.append(char)
                 

@@ -5,16 +5,19 @@ This is the staff-friendly workflow for adding teachings to the website.
 ## How Staff Use It
 
 1. Double-click `Teaching Upload Assistant.bat`.
-2. Enter the teaching year, series, and speaker.
-3. Choose individual audio files or a folder of audio files.
-4. Review the detected titles and edit anything that needs correction.
-5. Click `Upload and Update Website`.
+2. In **Batch details**, enter the year and speaker. Choose an existing series from the list, or type a new one. Enter the uploader password if the field appears.
+3. Click **Choose files** or **Choose folder**. The assistant accepts MP3 and M4A files.
+4. In **Review teachings**, check the titles and statuses. Double-click a row or select it and click **Edit selected** to make a correction. Search the list if you have many files. Rows marked **Already on website** or **Duplicate in batch** must be corrected or removed before upload.
+5. Click **Upload teachings** and confirm. Keep the assistant open until the progress bar says **Complete**.
+6. If automatic publishing is enabled on this computer, select **Publish to website after upload** before step 5. Otherwise, tell the website owner that the teaching data is ready to publish.
+
+Changing the batch year, series, or speaker updates files that have not been individually changed. **Apply batch details to all** resets individual year, series, and speaker changes. **Clear list** starts a new batch after you finish.
 
 The assistant uploads the files to Archive.org using the Archive.org setup already on this computer, then adds the new teachings to `content/teachings/sermons.json`.
 
 ## Publishing
 
-By default, the assistant stops after updating and validating the website data. It will show `Ready for owner publish`.
+By default, the assistant stops after updating and validating the website data. It will show `Ready for owner publish`. The **Check website data** button can also run validation before uploading.
 
 To allow the assistant to commit and push automatically later, set this environment variable on the church-owned publishing computer:
 

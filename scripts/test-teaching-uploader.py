@@ -1,4 +1,5 @@
 import sys
+import tempfile
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -54,6 +55,46 @@ def run():
         series_options == ["Believers Authority", "Open Doors", "General Teachings"],
         "Existing series dropdown options failed.",
     )
+
+    check(uploader.valid_year("2026") == 2026, "Valid year was rejected.")
+    check(uploader.valid_year("2026x") is None, "Invalid year was accepted.")
+    check(uploader.valid_year("1800") is None, "Out-of-range year was accepted.")
+
+    with tempfile.TemporaryDirectory() as folder:
+        first = Path(folder) / "New_Teaching.mp3"
+        second = Path(folder) / "Copy.m4a"
+        first.write_bytes(b"sample")
+        second.write_bytes(b"sample")
+        entries = [
+            uploader.UploadEntry(first, "New Teaching", "Open Doors", 2026, uploader.DEFAULT_SPEAKER),
+            uploader.UploadEntry(second, "New Teaching", "Open Doors", 2026, uploader.DEFAULT_SPEAKER),
+        ]
+        check(
+            uploader.review_uploads(entries, []) == ["Ready", "Duplicate in batch"],
+            "Preflight did not catch a duplicate title in the batch.",
+        )
+        entries[1].title = "Another Teaching"
+        check(
+            uploader.review_uploads(entries, []) == ["Ready", "Ready"],
+            "Distinct files were incorrectly blocked.",
+        )
+        first.unlink()
+        check(uploader.review_uploads(entries, [])[0] == "File missing", "Missing file was not detected.")
+        first.write_bytes(b"sample")
+        entries[0].series = ""
+        check(uploader.review_uploads(entries, [])[0] == "Add series", "Missing series was not detected.")
+
+        entries[0].series = "Open Doors"
+        current = {
+            "id": "2026-open-doors-new-teaching",
+            "title": "New Teaching",
+            "series": "Open Doors",
+            "year": 2026,
+            "audioUrl": "https://archive.org/download/elgcc-teachings-2026/New%20Teaching.mp3",
+        }
+        check(uploader.review_uploads(entries[:1], [current]) == ["Already on website"], "Existing teaching was not detected.")
+        current["unavailable"] = True
+        check(uploader.review_uploads(entries[:1], [current]) == ["Restore existing"], "Unavailable teaching was not recognized for restoration.")
 
     print("Teaching uploader checks passed.")
 
