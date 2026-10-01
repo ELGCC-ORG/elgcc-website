@@ -27,26 +27,54 @@ body {
   overflow-x: clip;
 }
 
-/* Chrome (especially Android) is aggressive about GPU compositing and can
- * briefly corrupt tiles when many rounded/alpha layers paint at once.
- * Keep teachings markup paint-simple and avoid smooth scrolling there. */
+/* Smooth, GPU-friendly styles for teachings cards and custom audio scrubber */
 .teachings-page {
   scroll-behavior: auto;
 }
 
-.teachings-page,
-.teachings-page * {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+/* Audio Player Range Slider styling */
+input[type="range"].player-scrubber {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.15);
+  height: 6px;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.teachings-page .teaching-card,
-.teachings-page .teaching-artwork {
-  filter: none !important;
-  transform: none !important;
-  will-change: auto !important;
-  -webkit-transform: none !important;
-  border-radius: 0 !important;
+input[type="range"].player-scrubber:hover {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+input[type="range"].player-scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #6B7F4C;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(107, 127, 76, 0.6);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="range"].player-scrubber::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #6B7F4C;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(107, 127, 76, 0.6);
+}
+
+input[type="range"].player-scrubber:active::-webkit-slider-thumb {
+  transform: scale(1.25);
+  background: #8A9D6F;
 }
 
 @layer utilities {

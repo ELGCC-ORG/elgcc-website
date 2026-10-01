@@ -149,3 +149,142 @@ export function validateSermonDraft(draft: SermonDraft) {
 
   return errors;
 }
+
+export type TeachingCategory =
+  | 'all'
+  | 'favorites'
+  | 'prayer-fasting'
+  | 'faith-authority'
+  | 'holy-spirit'
+  | 'grace-salvation'
+  | 'spiritual-growth'
+  | 'worship-songs';
+
+export interface CategoryInfo {
+  id: TeachingCategory;
+  label: string;
+  shortLabel: string;
+  icon: string;
+  regex?: RegExp;
+}
+
+export const TEACHING_CATEGORIES: CategoryInfo[] = [
+  { id: 'all', label: 'All Teachings', shortLabel: 'All', icon: '✦' },
+  { id: 'favorites', label: 'My Saved', shortLabel: 'Saved', icon: '♥' },
+  {
+    id: 'prayer-fasting',
+    label: 'Prayer & Fasting',
+    shortLabel: 'Prayer & Fasting',
+    icon: '🙏',
+    regex: /prayer|fasting|open doors|intercession|pray|consecrat|vigil/i,
+  },
+  {
+    id: 'faith-authority',
+    label: 'Faith & Authority',
+    shortLabel: 'Faith & Authority',
+    icon: '⚔️',
+    regex: /faith|authority|power|victory|dominion|overcom|believers authority/i,
+  },
+  {
+    id: 'holy-spirit',
+    label: 'Holy Spirit & Gifts',
+    shortLabel: 'Holy Spirit',
+    icon: '🕊️',
+    regex: /spirit|gifts|tongue|anoint|unction|born of the spirit/i,
+  },
+  {
+    id: 'grace-salvation',
+    label: 'Grace & Salvation',
+    shortLabel: 'Grace & Salvation',
+    icon: '✝️',
+    regex: /grace|salvation|righteous|creation|in christ|cross|blood|redempt|justif/i,
+  },
+  {
+    id: 'spiritual-growth',
+    label: 'Spiritual Growth',
+    shortLabel: 'Growth & Purpose',
+    icon: '🌱',
+    regex: /growth|matur|purpose|commit|service|disciple|wisdom|character/i,
+  },
+  {
+    id: 'worship-songs',
+    label: 'Worship & Songs',
+    shortLabel: 'Worship & Songs',
+    icon: '🎵',
+    regex: /worship|song|chant|psalm|praise/i,
+  },
+];
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function cleanSeriesTitle(series: string, year?: number) {
+  let clean = normalizeTeachingText(series);
+  if (year) {
+    clean = clean
+      .replace(new RegExp(`\\s*\\(?${year}\\)?\\s*$`, 'i'), '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+  return clean || normalizeTeachingText(series);
+}
+
+export function cleanSermonTitle(sermon: Pick<Sermon, 'title' | 'series' | 'year'>) {
+  const title = normalizeTeachingText(sermon.title);
+  const displaySeries = cleanSeriesTitle(sermon.series, sermon.year);
+  const candidates = [sermon.series, displaySeries].filter(Boolean);
+
+  for (const candidate of candidates) {
+    const withoutPrefix = title
+      .replace(new RegExp(`^${escapeRegExp(candidate)}\\s*[-:–—]?\\s*`, 'i'), '')
+      .trim();
+
+    if (withoutPrefix && withoutPrefix.length >= 4 && withoutPrefix !== title) {
+      return withoutPrefix;
+    }
+  }
+
+  return title;
+}
+
+export function getTrackLabel(title: string) {
+  const match = title.match(/track\s*(\d+)/i);
+  return match ? `Track ${match[1]}` : '';
+}
+
+export function matchesCategory(
+  sermon: Sermon,
+  category: TeachingCategory,
+  savedIds: Set<string> = new Set()
+): boolean {
+  if (category === 'all') return true;
+  if (category === 'favorites') return savedIds.has(sermon.id);
+
+  const cat = TEACHING_CATEGORIES.find((c) => c.id === category);
+  if (!cat || !cat.regex) return true;
+
+  const target = `${sermon.title} ${sermon.series}`;
+  return cat.regex.test(target);
+}
+
+export function formatTime(seconds: number): string {
+  if (isNaN(seconds) || seconds < 0) return '0:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  if (mins >= 60) {
+    const hrs = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    return `${hrs}:${remMins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+export function generateWhatsAppShareUrl(sermon: Pick<Sermon, 'id' | 'title' | 'series' | 'speaker' | 'year'>, origin?: string) {
+  const listenUrl = getBrandedListenUrl(sermon.id, origin);
+  const speaker = sermon.speaker || DEFAULT_SPEAKER;
+  const title = cleanSermonTitle(sermon);
+  const message = `🕊️ *${title}*\nBy ${speaker}\nSeries: ${cleanSeriesTitle(sermon.series, sermon.year)}\n\nListen on ELGCC Audio Library:\n${listenUrl}`;
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+}
+
