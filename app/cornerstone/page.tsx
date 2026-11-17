@@ -136,10 +136,6 @@ function CornerstoneFormContent() {
       setErrorMessage('Please enter the full name.');
       return;
     }
-    if (!phone.trim()) {
-      setErrorMessage('Please enter a phone number.');
-      return;
-    }
 
     setLoading(true);
 
@@ -366,27 +362,30 @@ function CornerstoneFormContent() {
 
               {/* Phone Number + WhatsApp Checkbox */}
               <div>
-                <label className="block text-xs text-gray-300 mb-1">Phone Number *</label>
+                <label className="block text-xs text-gray-300 mb-1">
+                  Phone Number <span className="text-gray-500 text-[11px] font-normal">(Optional)</span>
+                </label>
                 <input
                   type="tel"
-                  required
                   placeholder="e.g. 08012345678"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full bg-[#121612] border border-white/15 focus:border-[#6B7F4C] text-white placeholder-gray-500 rounded-xl px-3.5 py-2.5 text-sm outline-none transition"
                 />
 
-                <label className="mt-2.5 flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={isWhatsApp}
-                    onChange={(e) => setIsWhatsApp(e.target.checked)}
-                    className="w-4 h-4 accent-[#6B7F4C] rounded cursor-pointer"
-                  />
-                  <span className="text-xs text-gray-300 flex items-center gap-1">
-                    <span className="text-emerald-400">💬</span> This phone number is on WhatsApp
-                  </span>
-                </label>
+                {phone.trim() && (
+                  <label className="mt-2.5 flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={isWhatsApp}
+                      onChange={(e) => setIsWhatsApp(e.target.checked)}
+                      className="w-4 h-4 accent-[#6B7F4C] rounded cursor-pointer"
+                    />
+                    <span className="text-xs text-gray-300 flex items-center gap-1">
+                      <span className="text-emerald-400">💬</span> This phone number is on WhatsApp
+                    </span>
+                  </label>
+                )}
               </div>
 
               {/* Home Address */}

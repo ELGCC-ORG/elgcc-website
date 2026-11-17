@@ -19,9 +19,9 @@ export async function POST(request: Request) {
       recordedBy,
     } = body;
 
-    if (!location || !school || !fullName || !phone) {
+    if (!location || !school || !fullName) {
       return NextResponse.json(
-        { success: false, error: 'Strategic location, school, full name, and phone number are required.' },
+        { success: false, error: 'Strategic location, school, and full name are required.' },
         { status: 400 }
       );
     }
@@ -36,8 +36,8 @@ export async function POST(request: Request) {
       location: location.toUpperCase().trim(),
       school: school.trim(),
       fullName: fullName.trim(),
-      phone: phone.trim(),
-      isWhatsApp: Boolean(isWhatsApp),
+      phone: (phone || '').trim(),
+      isWhatsApp: Boolean(phone && isWhatsApp),
       homeAddress: (homeAddress || '').trim(),
       classCategory: (classCategory || 'Secondary (Senior: SS1-SS3)').trim(),
       notes: (notes || '').trim(),

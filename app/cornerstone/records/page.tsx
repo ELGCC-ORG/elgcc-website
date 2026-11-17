@@ -337,22 +337,26 @@ function RecordsDashboardContent() {
                           <span className="text-[10px] text-gray-500 font-mono">{r.id}</span>
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono text-white">{r.phone}</span>
-                            {r.isWhatsApp ? (
-                              <a
-                                href={waLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="Open in WhatsApp"
-                                className="inline-flex items-center text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.5 rounded hover:bg-emerald-900/80 transition"
-                              >
-                                💬 WhatsApp
-                              </a>
-                            ) : (
-                              <span className="text-[10px] text-gray-500">Call only</span>
-                            )}
-                          </div>
+                          {r.phone ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-white">{r.phone}</span>
+                              {r.isWhatsApp ? (
+                                <a
+                                  href={waLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Open in WhatsApp"
+                                  className="inline-flex items-center text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.5 rounded hover:bg-emerald-900/80 transition"
+                                >
+                                  💬 WhatsApp
+                                </a>
+                              ) : (
+                                <span className="text-[10px] text-gray-500">Call only</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-500">—</span>
+                          )}
                         </td>
                         <td className="py-3 px-4">
                           <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-[#6B7F4C]/25 text-[#A2B87D] border border-[#6B7F4C]/40">
