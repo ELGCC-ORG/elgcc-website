@@ -288,3 +288,288 @@ export function generateWhatsAppShareUrl(sermon: Pick<Sermon, 'id' | 'title' | '
   return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
 }
 
+export interface SeriesGroup {
+  key: string;
+  slug: string;
+  series: string;
+  displaySeries: string;
+  year: number;
+  speaker: string;
+  coverSpeaker: string;
+  isMultiSpeaker: boolean;
+  categoryLabel: string;
+  latestTimestamp: number;
+  latestDateLabel: string;
+  thumbnail?: string;
+  sermons: Sermon[];
+  count: number;
+}
+
+export function normalizeSpeakerKey(speaker?: string): string {
+  return normalizeTeachingText(speaker || DEFAULT_SPEAKER)
+    .toLowerCase()
+    .replace(/^(?:pastor|pst\.?|rev\.?)\s+/i, '')
+    .trim();
+}
+
+export function getSubTeachingKey(title: string): string {
+  const withoutParens = title.replace(/\([^)]*\)/g, ' ');
+  const withoutTrackSuffix = withoutParens.replace(
+    /[-–—.,]?\s*(?:track|part|session)\s*\d+.*$/i,
+    ''
+  );
+  const cleaned = normalizeTeachingText(withoutTrackSuffix).toLowerCase();
+  return cleaned || normalizeTeachingText(title).toLowerCase();
+}
+
+export function getTrackNumber(title: string): number {
+  const match = title.match(/(?:track|part|session)\s*(\d+)/i);
+  return match ? parseInt(match[1], 10) : 999;
+}
+
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export function formatShortDate(dateStr?: string, fallbackYear?: number): string {
+  if (dateStr) {
+    const parsed = Date.parse(dateStr);
+    if (!Number.isNaN(parsed)) {
+      const dt = new Date(parsed);
+      return `${dt.getUTCDate()} ${SHORT_MONTHS[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`;
+    }
+  }
+  return fallbackYear ? String(fallbackYear) : '';
+}
+
+export function inferSeriesBadge(series: string, count: number): string {
+  if (/convention/i.test(series)) return 'Convention';
+  if (/crusade/i.test(series)) return 'Crusade';
+  if (/conference|training of the spirit/i.test(series)) return 'Conference';
+  if (/fasting/i.test(series)) return 'Fasting';
+  if (/healing/i.test(series)) return 'Healing Meeting';
+  if (/worship|song|chant/i.test(series)) return 'Worship';
+  return count > 1 ? 'Series' : 'Message';
+}
+
+const PRESERVED_ACRONYMS = new Set(['OAU', 'ELGCC', 'IWO', 'UI', 'UCH', 'II', 'III', 'IV', 'VI', 'VII', 'VIII', 'IX', 'XI', 'XII']);
+const MINOR_WORDS = new Set(['of', 'the', 'and', 'in', 'on', 'to', 'for', 'with', 'a', 'an', 'by', 'at', 'from', 'is', 'are', 'as', 'or']);
+
+export function formatCoverHeading(raw: string): string {
+  const normalized = normalizeTeachingText(raw);
+  if (!normalized) return '';
+
+  const letters = normalized.replace(/[^a-zA-Z]/g, '');
+  const upperCount = normalized.replace(/[^A-Z]/g, '').length;
+  const isShouting = letters.length > 0 && upperCount / letters.length > 0.7;
+
+  if (!isShouting) return normalized;
+
+  const words = normalized.split(' ');
+  return words
+    .map((word, idx) => {
+      const bare = word.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      if (PRESERVED_ACRONYMS.has(bare)) {
+        return word.toUpperCase();
+      }
+      const lower = word.toLowerCase();
+      if (idx > 0 && idx < words.length - 1 && MINOR_WORDS.has(lower)) {
+        return lower;
+      }
+      return lower.replace(/[a-zA-Z]/, (ch) => ch.toUpperCase());
+    })
+    .join(' ');
+}
+
+export function splitCoverTitle(displaySeries: string): { main: string; sub?: string } {
+  const clean = normalizeTeachingText(displaySeries);
+  if (!clean) return { main: 'ELGCC Teaching' };
+
+  // Handle trailing parenthetical subtitle: "Main Title (Subtitle)"
+  const parenMatch = clean.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  if (parenMatch) {
+    const left = parenMatch[1].trim();
+    const inside = parenMatch[2].trim();
+    if (left.length >= 3 && inside.length >= 3) {
+      return {
+        main: formatCoverHeading(left),
+        sub: formatCoverHeading(inside),
+      };
+    }
+  }
+
+  // Handle dash separator: "Prefix - Main" or "Main - Subtitle"
+  const dashMatch = clean.match(/^(.*?)\s+[-–—]\s+(.+)$/);
+  if (dashMatch) {
+    const left = dashMatch[1].trim();
+    const right = dashMatch[2].trim();
+    if (left.length >= 3 && right.length >= 3) {
+      const leftIsEvent = /crusade|conference|convention|meeting|retreat|camp|training/i.test(left);
+      if (leftIsEvent) {
+        return {
+          main: formatCoverHeading(right),
+          sub: formatCoverHeading(left),
+        };
+      }
+      return {
+        main: formatCoverHeading(left),
+        sub: formatCoverHeading(right),
+      };
+    }
+  }
+
+  return { main: formatCoverHeading(clean) };
+}
+
+export function getSeriesShareUrl(seriesSlug: string, origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://eternallifegcc.com') {
+  return `${origin.replace(/\/$/, '')}/teachings?series=${encodeURIComponent(seriesSlug)}`;
+}
+
+export function generateSeriesWhatsAppShareUrl(
+  group: Pick<SeriesGroup, 'slug' | 'displaySeries' | 'speaker' | 'count' | 'year'>,
+  origin?: string
+): string {
+  const url = getSeriesShareUrl(group.slug, origin);
+  const trackText = group.count === 1 ? '1 message' : `${group.count} tracks`;
+  const message = `🕊️ *${group.displaySeries}* (${group.year})\nBy ${group.speaker} • ${trackText}\n\nListen on ELGCC Audio Library:\n${url}`;
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+}
+
+export function buildSeriesGroups(items: Sermon[]): SeriesGroup[] {
+  const groups = new Map<string, {
+    key: string;
+    series: string;
+    displaySeries: string;
+    year: number;
+    latestTimestamp: number;
+    latestDateStr?: string;
+    thumbnail?: string;
+    indexed: Array<{ sermon: Sermon; index: number }>;
+  }>();
+
+  items.forEach((sermon, index) => {
+    const key = `${sermon.year}::${sermon.series}`;
+    const tsRaw = sermon.uploadedAt || sermon.date;
+    const parsedTs = tsRaw ? Date.parse(tsRaw) : 0;
+    const validTs = Number.isNaN(parsedTs) ? 0 : parsedTs;
+
+    const existing = groups.get(key);
+    if (existing) {
+      existing.indexed.push({ sermon, index });
+      if (!existing.thumbnail && sermon.thumbnail) {
+        existing.thumbnail = sermon.thumbnail;
+      }
+      if (validTs > existing.latestTimestamp) {
+        existing.latestTimestamp = validTs;
+        existing.latestDateStr = tsRaw;
+      }
+      return;
+    }
+
+    groups.set(key, {
+      key,
+      series: sermon.series,
+      displaySeries: cleanSeriesTitle(sermon.series, sermon.year),
+      year: sermon.year,
+      latestTimestamp: validTs,
+      latestDateStr: tsRaw,
+      thumbnail: sermon.thumbnail,
+      indexed: [{ sermon, index }],
+    });
+  });
+
+  const primaryHostKey = normalizeSpeakerKey(DEFAULT_SPEAKER);
+
+  const result: SeriesGroup[] = Array.from(groups.values()).map((g) => {
+    // 1. Multi-speaker detection across normalized speaker keys
+    const speakerCounts = new Map<string, { display: string; count: number }>();
+    g.indexed.forEach(({ sermon }) => {
+      const rawSpeaker = normalizeTeachingText(sermon.speaker || DEFAULT_SPEAKER) || DEFAULT_SPEAKER;
+      const normKey = normalizeSpeakerKey(rawSpeaker);
+      const existing = speakerCounts.get(normKey);
+      if (existing) {
+        existing.count += 1;
+        if (normKey === primaryHostKey && rawSpeaker === DEFAULT_SPEAKER) {
+          existing.display = DEFAULT_SPEAKER;
+        }
+      } else {
+        speakerCounts.set(normKey, {
+          display: normKey === primaryHostKey ? DEFAULT_SPEAKER : rawSpeaker,
+          count: 1,
+        });
+      }
+    });
+
+    const speakerEntries = Array.from(speakerCounts.values());
+    const isMultiSpeaker = speakerEntries.length > 1;
+    const singleSpeaker = speakerEntries[0]?.display || DEFAULT_SPEAKER;
+    const speaker = isMultiSpeaker ? 'Multiple Ministers' : singleSpeaker;
+    const coverSpeaker = isMultiSpeaker ? '' : singleSpeaker;
+
+    // 2. Group tracks by sub-teaching so conference sub-series stay grouped and chronological
+    const subBuckets = new Map<string, {
+      hostRank: number;
+      count: number;
+      minIndex: number;
+    }>();
+
+    g.indexed.forEach(({ sermon, index }) => {
+      const subKey = getSubTeachingKey(sermon.title);
+      const isPrimaryHost = normalizeSpeakerKey(sermon.speaker) === primaryHostKey;
+      const existing = subBuckets.get(subKey);
+      if (existing) {
+        existing.count += 1;
+        if (isPrimaryHost) existing.hostRank = 0;
+        if (index < existing.minIndex) existing.minIndex = index;
+      } else {
+        subBuckets.set(subKey, {
+          hostRank: isPrimaryHost ? 0 : 1,
+          count: 1,
+          minIndex: index,
+        });
+      }
+    });
+
+    g.indexed.sort((a, b) => {
+      const keyA = getSubTeachingKey(a.sermon.title);
+      const keyB = getSubTeachingKey(b.sermon.title);
+      if (keyA !== keyB && subBuckets.size > 1) {
+        const metaA = subBuckets.get(keyA)!;
+        const metaB = subBuckets.get(keyB)!;
+        if (metaA.hostRank !== metaB.hostRank) return metaA.hostRank - metaB.hostRank;
+        if (metaB.count !== metaA.count) return metaB.count - metaA.count;
+        return metaA.minIndex - metaB.minIndex;
+      }
+
+      const trackA = getTrackNumber(a.sermon.title);
+      const trackB = getTrackNumber(b.sermon.title);
+      if (trackA !== trackB) return trackA - trackB;
+      return a.index - b.index;
+    });
+
+    const sortedSermons = g.indexed.map((item) => item.sermon);
+
+    return {
+      key: g.key,
+      slug: slugifyTeaching(`${g.year}-${g.series}`),
+      series: g.series,
+      displaySeries: g.displaySeries,
+      year: g.year,
+      speaker,
+      coverSpeaker,
+      isMultiSpeaker,
+      categoryLabel: inferSeriesBadge(g.series, sortedSermons.length),
+      latestTimestamp: g.latestTimestamp,
+      latestDateLabel: formatShortDate(g.latestDateStr, g.year),
+      thumbnail: g.thumbnail,
+      sermons: sortedSermons,
+      count: sortedSermons.length,
+    };
+  });
+
+  return result.sort((a, b) => {
+    if (b.latestTimestamp !== a.latestTimestamp) return b.latestTimestamp - a.latestTimestamp;
+    if (b.year !== a.year) return b.year - a.year;
+    if (b.count !== a.count) return b.count - a.count;
+    return a.displaySeries.localeCompare(b.displaySeries);
+  });
+}
+

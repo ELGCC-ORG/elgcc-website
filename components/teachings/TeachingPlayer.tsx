@@ -6,14 +6,14 @@ import {
   cleanSermonTitle,
   cleanSeriesTitle,
   formatTime,
-  getAudioType,
   getBrandedListenUrl,
   generateWhatsAppShareUrl,
-  DEFAULT_SPEAKER,
 } from '@/lib/teachings';
+import SeriesArtwork from './SeriesArtwork';
 
 interface TeachingPlayerProps {
   sermon: Sermon | null;
+  theme?: 'light' | 'dark';
   onClose: () => void;
   onNext?: () => void;
   onPrev?: () => void;
@@ -21,12 +21,14 @@ interface TeachingPlayerProps {
   hasPrev?: boolean;
   isSaved?: boolean;
   onToggleSave?: (sermonId: string) => void;
+  onPlayingChange?: (playing: boolean) => void;
 }
 
 const SPEED_OPTIONS = [1, 1.25, 1.5, 1.75, 2, 0.75];
 
 export default function TeachingPlayer({
   sermon,
+  theme = 'dark',
   onClose,
   onNext,
   onPrev,
@@ -34,8 +36,10 @@ export default function TeachingPlayer({
   hasPrev = false,
   isSaved = false,
   onToggleSave,
+  onPlayingChange,
 }: TeachingPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playbackRateRef = useRef<number>(1);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -44,13 +48,25 @@ export default function TeachingPlayer({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isExpandedMobile, setIsExpandedMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const updatePlaying = (next: boolean) => {
+    setIsPlaying(next);
+    onPlayingChange?.(next);
+  };
+
+  // Sync playback rate without restarting current sermon
+  useEffect(() => {
+    playbackRateRef.current = playbackRate;
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackRate;
+    }
+  }, [playbackRate]);
 
   // When active sermon changes, reset state and load audio
   useEffect(() => {
     if (!sermon) {
-      setIsPlaying(false);
+      updatePlaying(false);
       setCurrentTime(0);
       setDuration(0);
       return;
@@ -58,8 +74,10 @@ export default function TeachingPlayer({
 
     const audio = audioRef.current;
     if (audio) {
-      audio.playbackRate = playbackRate;
+      audio.playbackRate = playbackRateRef.current;
       setIsLoading(true);
+      setCurrentTime(0);
+      setDuration(0);
 
       // Check if there is saved resume time for this specific sermon
       try {
@@ -77,11 +95,12 @@ export default function TeachingPlayer({
 
       audio
         .play()
-        .then(() => setIsPlaying(true))
-        .catch(() => setIsPlaying(false))
+        .then(() => updatePlaying(true))
+        .catch(() => updatePlaying(false))
         .finally(() => setIsLoading(false));
     }
-  }, [sermon, playbackRate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sermon?.id]);
 
   // Save playback progress periodically for resume feature
   useEffect(() => {
@@ -109,12 +128,12 @@ export default function TeachingPlayer({
 
     if (isPlaying) {
       audio.pause();
-      setIsPlaying(false);
+      updatePlaying(false);
     } else {
       audio
         .play()
-        .then(() => setIsPlaying(true))
-        .catch(() => setIsPlaying(false));
+        .then(() => updatePlaying(true))
+        .catch(() => updatePlaying(false));
     }
   };
 
@@ -138,9 +157,6 @@ export default function TeachingPlayer({
     const currentIndex = SPEED_OPTIONS.indexOf(playbackRate);
     const nextRate = SPEED_OPTIONS[(currentIndex + 1) % SPEED_OPTIONS.length];
     setPlaybackRate(nextRate);
-    if (audioRef.current) {
-      audioRef.current.playbackRate = nextRate;
-    }
   };
 
   const toggleMute = () => {
@@ -181,11 +197,12 @@ export default function TeachingPlayer({
 
   if (!sermon) return null;
 
+  const isLight = theme === 'light';
   const title = cleanSermonTitle(sermon);
   const displaySeries = cleanSeriesTitle(sermon.series, sermon.year);
-  const speaker = sermon.speaker || DEFAULT_SPEAKER;
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const whatsappUrl = generateWhatsAppShareUrl(sermon);
+  const scrubberClass = isLight ? 'player-scrubber-light' : 'player-scrubber';
 
   return (
     <>
@@ -205,7 +222,7 @@ export default function TeachingPlayer({
           }
         }}
         onEnded={() => {
-          setIsPlaying(false);
+          updatePlaying(false);
           if (onNext) {
             onNext();
           }
@@ -213,56 +230,69 @@ export default function TeachingPlayer({
         onWaiting={() => setIsLoading(true)}
         onError={() => {
           setIsLoading(false);
-          setIsPlaying(false);
+          updatePlaying(false);
         }}
         onPlaying={() => {
           setIsLoading(false);
-          setIsPlaying(true);
+          updatePlaying(true);
         }}
-        onPause={() => setIsPlaying(false)}
+        onPause={() => updatePlaying(false)}
       />
 
       {/* Floating Sticky Player */}
       <div className="fixed inset-x-0 bottom-0 z-50 transition-transform duration-300">
-        {/* Subtle glowing top line */}
-        <div className="relative h-1 w-full bg-white/10">
+        {/* Progress Accent Strip */}
+        <div className={`relative h-1 w-full ${isLight ? 'bg-black/10' : 'bg-white/10'}`}>
           <div
             className="h-full bg-primary transition-all duration-150"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
-        <div className="border-t border-white/10 bg-[#161616] px-3 py-2.5 shadow-2xl backdrop-blur-md sm:px-6 sm:py-3.5">
+        <div
+          className={`border-t px-3 py-2.5 backdrop-blur-md sm:px-6 sm:py-3.5 transition-colors ${
+            isLight
+              ? 'border-black/10 bg-white/95 text-[#141414] shadow-[0_-12px_40px_rgba(0,0,0,0.08)]'
+              : 'border-white/10 bg-[#161616]/95 text-white shadow-2xl'
+          }`}
+        >
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-6">
-            {/* Left: Sermon Info & Quick Actions */}
+            {/* Left: Series Artwork & Sermon Info */}
             <div className="flex min-w-0 flex-1 items-center gap-3 md:flex-initial md:w-72 lg:w-80">
-              {/* Disc Artwork Icon */}
-              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/30 to-secondary/30 border border-white/10 text-primary shadow-inner">
-                {isLoading ? (
-                  <svg className="h-5 w-5 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                ) : isPlaying ? (
-                  <div className="flex items-end gap-0.5 h-4">
-                    <span className="w-1 bg-primary rounded-full animate-bounce [animation-delay:-0.3s] h-3" />
-                    <span className="w-1 bg-primary rounded-full animate-bounce [animation-delay:-0.15s] h-4" />
-                    <span className="w-1 bg-primary rounded-full animate-bounce h-2" />
+              {/* Real Series Mini Artwork */}
+              <div
+                className={`relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border shadow-sm ${
+                  isLight ? 'border-black/10' : 'border-white/10'
+                }`}
+              >
+                <SeriesArtwork
+                  seriesTitle={sermon.series}
+                  year={sermon.year}
+                  thumbnail={sermon.thumbnail}
+                  size="xs"
+                />
+                {isLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/45 backdrop-blur-[1px]">
+                    <svg className="h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
                   </div>
-                ) : (
-                  <svg className="h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-                  </svg>
                 )}
               </div>
 
               {/* Title & Series */}
               <div className="min-w-0 flex-1">
-                <h4 className="truncate text-xs sm:text-sm font-bold text-white tracking-wide" title={title}>
+                <h4
+                  className={`truncate text-xs sm:text-sm font-bold tracking-wide ${
+                    isLight ? 'text-[#141414]' : 'text-white'
+                  }`}
+                  title={title}
+                >
                   {title}
                 </h4>
-                <p className="truncate text-[11px] sm:text-xs text-white/50">
-                  {displaySeries} • <span className="text-primary/80">{sermon.year}</span>
+                <p className={`truncate text-[11px] sm:text-xs ${isLight ? 'text-[#666666]' : 'text-white/50'}`}>
+                  {displaySeries} · <span className="text-primary font-semibold">{sermon.year}</span>
                 </p>
               </div>
 
@@ -272,7 +302,11 @@ export default function TeachingPlayer({
                   type="button"
                   onClick={() => onToggleSave(sermon.id)}
                   className={`hidden sm:flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                    isSaved ? 'text-red-400 hover:text-red-300' : 'text-white/40 hover:text-white'
+                    isSaved
+                      ? 'text-red-500 hover:text-red-400'
+                      : isLight
+                        ? 'text-black/35 hover:text-[#141414]'
+                        : 'text-white/40 hover:text-white'
                   }`}
                   title={isSaved ? 'Remove from saved' : 'Save to My Library'}
                   aria-label="Save teaching"
@@ -293,7 +327,9 @@ export default function TeachingPlayer({
                   type="button"
                   onClick={onPrev}
                   disabled={!hasPrev}
-                  className="hidden sm:flex h-8 w-8 items-center justify-center rounded-full text-white/60 transition-colors hover:text-white disabled:opacity-30 disabled:hover:text-white/60"
+                  className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-full transition-colors disabled:opacity-30 ${
+                    isLight ? 'text-[#555555] hover:text-[#111111]' : 'text-white/60 hover:text-white'
+                  }`}
                   title="Previous message"
                   aria-label="Previous track"
                 >
@@ -306,7 +342,9 @@ export default function TeachingPlayer({
                 <button
                   type="button"
                   onClick={() => handleSkip(-15)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition-colors hover:text-white active:scale-95"
+                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-95 ${
+                    isLight ? 'text-[#444444] hover:text-[#111111]' : 'text-white/70 hover:text-white'
+                  }`}
                   title="Rewind 15 seconds"
                   aria-label="Rewind 15 seconds"
                 >
@@ -320,7 +358,7 @@ export default function TeachingPlayer({
                 <button
                   type="button"
                   onClick={togglePlay}
-                  className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-primary text-dark shadow-lg shadow-primary/20 transition-all hover:scale-105 hover:bg-primary-light active:scale-95"
+                  className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/25 transition-all hover:scale-105 hover:bg-primary-dark active:scale-95"
                   aria-label={isPlaying ? 'Pause' : 'Play'}
                 >
                   {isLoading ? (
@@ -343,7 +381,9 @@ export default function TeachingPlayer({
                 <button
                   type="button"
                   onClick={() => handleSkip(15)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition-colors hover:text-white active:scale-95"
+                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-95 ${
+                    isLight ? 'text-[#444444] hover:text-[#111111]' : 'text-white/70 hover:text-white'
+                  }`}
                   title="Forward 15 seconds"
                   aria-label="Forward 15 seconds"
                 >
@@ -358,7 +398,9 @@ export default function TeachingPlayer({
                   type="button"
                   onClick={onNext}
                   disabled={!hasNext}
-                  className="hidden sm:flex h-8 w-8 items-center justify-center rounded-full text-white/60 transition-colors hover:text-white disabled:opacity-30 disabled:hover:text-white/60"
+                  className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-full transition-colors disabled:opacity-30 ${
+                    isLight ? 'text-[#555555] hover:text-[#111111]' : 'text-white/60 hover:text-white'
+                  }`}
                   title="Next message in series"
                   aria-label="Next track"
                 >
@@ -370,7 +412,7 @@ export default function TeachingPlayer({
 
               {/* Scrubber Bar (Desktop & Tablet) */}
               <div className="hidden sm:flex w-full items-center gap-2 pt-1">
-                <span className="w-10 text-right text-[11px] font-mono text-white/50">
+                <span className={`w-10 text-right text-[11px] font-mono ${isLight ? 'text-[#666666]' : 'text-white/50'}`}>
                   {formatTime(currentTime)}
                 </span>
                 <input
@@ -380,10 +422,10 @@ export default function TeachingPlayer({
                   step={0.5}
                   value={currentTime}
                   onChange={handleSeek}
-                  className="player-scrubber flex-1"
+                  className={`${scrubberClass} flex-1`}
                   aria-label="Audio scrubber"
                 />
-                <span className="w-10 text-[11px] font-mono text-white/50">
+                <span className={`w-10 text-[11px] font-mono ${isLight ? 'text-[#666666]' : 'text-white/50'}`}>
                   {formatTime(duration)}
                 </span>
               </div>
@@ -395,7 +437,11 @@ export default function TeachingPlayer({
               <button
                 type="button"
                 onClick={cycleSpeed}
-                className="flex h-8 items-center rounded-lg border border-white/10 bg-white/5 px-2 text-[11px] font-bold text-white/80 transition-colors hover:border-primary/50 hover:text-primary active:scale-95"
+                className={`flex h-8 items-center rounded-lg border px-2 text-[11px] font-bold transition-colors active:scale-95 ${
+                  isLight
+                    ? 'border-black/15 bg-black/[0.03] text-[#333333] hover:border-primary hover:text-primary'
+                    : 'border-white/10 bg-white/5 text-white/80 hover:border-primary/50 hover:text-primary'
+                }`}
                 title="Change playback speed"
               >
                 {playbackRate}x
@@ -406,7 +452,9 @@ export default function TeachingPlayer({
                 <button
                   type="button"
                   onClick={toggleMute}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-white/60 transition-colors hover:text-white"
+                  className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                    isLight ? 'text-[#555555] hover:text-[#111111]' : 'text-white/60 hover:text-white'
+                  }`}
                   title={isMuted ? 'Unmute' : 'Mute'}
                 >
                   {isMuted || volume === 0 ? (
@@ -427,7 +475,9 @@ export default function TeachingPlayer({
                   step={0.05}
                   value={isMuted ? 0 : volume}
                   onChange={handleVolumeChange}
-                  className="h-1 w-16 cursor-pointer accent-primary bg-white/20 rounded-full"
+                  className={`h-1 w-16 cursor-pointer accent-primary rounded-full ${
+                    isLight ? 'bg-black/15' : 'bg-white/20'
+                  }`}
                   aria-label="Volume slider"
                 />
               </div>
@@ -437,7 +487,11 @@ export default function TeachingPlayer({
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-emerald-600/20 text-emerald-400 transition-colors hover:bg-emerald-600 hover:text-white"
+                className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+                  isLight
+                    ? 'border-black/10 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+                    : 'border-white/10 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white'
+                }`}
                 title="Share this teaching to WhatsApp"
                 aria-label="Share on WhatsApp"
               >
@@ -450,7 +504,11 @@ export default function TeachingPlayer({
               <a
                 href={sermon.audioUrl}
                 download
-                className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-white/60 transition-colors hover:border-primary/40 hover:text-white"
+                className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+                  isLight
+                    ? 'border-black/10 text-[#555555] hover:border-primary hover:text-primary'
+                    : 'border-white/10 text-white/60 hover:border-primary/40 hover:text-white'
+                }`}
                 title="Download MP3"
                 aria-label={`Download ${title}`}
               >
@@ -463,7 +521,11 @@ export default function TeachingPlayer({
               <button
                 type="button"
                 onClick={copyLink}
-                className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-white/60 transition-colors hover:border-primary/40 hover:text-white"
+                className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+                  isLight
+                    ? 'border-black/10 text-[#555555] hover:border-primary hover:text-primary'
+                    : 'border-white/10 text-white/60 hover:border-primary/40 hover:text-white'
+                }`}
                 title={copied ? 'Link copied!' : 'Copy sermon link'}
                 aria-label="Copy link"
               >
@@ -481,7 +543,11 @@ export default function TeachingPlayer({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                  isLight
+                    ? 'text-[#666666] hover:bg-black/5 hover:text-[#111111]'
+                    : 'text-white/40 hover:bg-white/10 hover:text-white'
+                }`}
                 title="Close player"
                 aria-label="Close player"
               >
@@ -492,9 +558,11 @@ export default function TeachingPlayer({
             </div>
           </div>
 
-          {/* Mobile Scrubber & Time (visible below button controls on small screens) */}
+          {/* Mobile Scrubber & Time */}
           <div className="flex sm:hidden items-center justify-between gap-2 pt-2 px-1">
-            <span className="text-[10px] font-mono text-white/50">{formatTime(currentTime)}</span>
+            <span className={`text-[10px] font-mono ${isLight ? 'text-[#666666]' : 'text-white/50'}`}>
+              {formatTime(currentTime)}
+            </span>
             <input
               type="range"
               min={0}
@@ -502,10 +570,12 @@ export default function TeachingPlayer({
               step={0.5}
               value={currentTime}
               onChange={handleSeek}
-              className="player-scrubber flex-1"
+              className={`${scrubberClass} flex-1`}
               aria-label="Audio scrubber"
             />
-            <span className="text-[10px] font-mono text-white/50">{formatTime(duration)}</span>
+            <span className={`text-[10px] font-mono ${isLight ? 'text-[#666666]' : 'text-white/50'}`}>
+              {formatTime(duration)}
+            </span>
           </div>
         </div>
       </div>

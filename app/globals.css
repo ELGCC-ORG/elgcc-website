@@ -77,9 +77,63 @@ input[type="range"].player-scrubber:active::-webkit-slider-thumb {
   background: #8A9D6F;
 }
 
+/* Light theme variant for audio scrubber */
+input[type="range"].player-scrubber-light {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(17, 17, 17, 0.14);
+  height: 6px;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+input[type="range"].player-scrubber-light:hover {
+  height: 8px;
+  background: rgba(17, 17, 17, 0.24);
+}
+
+input[type="range"].player-scrubber-light::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #6B7F4C;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="range"].player-scrubber-light::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #6B7F4C;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+}
+
+input[type="range"].player-scrubber-light:active::-webkit-slider-thumb {
+  transform: scale(1.25);
+  background: #556339;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 
   .gradient-text {
