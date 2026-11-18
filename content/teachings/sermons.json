@@ -11649,30 +11649,6 @@
     "uploadedAt": "2026-10-29T01:38:13.894677+00:00"
   },
   {
-    "id": "2026-spiritual-intelligence-the-art-of-flowing-with-the-spirit-track-1-supernatural-intelligence-track-2",
-    "title": "Supernatural Intelligence - Track 2",
-    "audioUrl": "https://archive.org/download/elgcc-teachings-2026/Supernatural%20Intelligence%20-%20Track%202.mp3",
-    "series": "Spiritual Intelligence (The Art of Flowing with the Spirit)",
-    "year": 2026,
-    "speaker": "Stephen Tijesuni Oyagbile",
-    "archiveItem": "elgcc-teachings-2026",
-    "uploadedAt": "2026-11-18T06:15:37.733858+00:00",
-    "unavailable": true,
-    "unavailableReason": "Archive.org audio file is 0 bytes (needs valid audio re-upload)"
-  },
-  {
-    "id": "2026-spiritual-intelligence-the-art-of-flowing-with-the-spirit-track-1-supernatural-intelligence-track-3",
-    "title": "Supernatural Intelligence - Track 3",
-    "audioUrl": "https://archive.org/download/elgcc-teachings-2026/Supernatural%20Intelligence%20-%20Track%203.mp3",
-    "series": "Spiritual Intelligence (The Art of Flowing with the Spirit)",
-    "year": 2026,
-    "speaker": "Stephen Tijesuni Oyagbile",
-    "archiveItem": "elgcc-teachings-2026",
-    "uploadedAt": "2026-11-18T06:15:49.228194+00:00",
-    "unavailable": true,
-    "unavailableReason": "Archive.org audio file is 0 bytes (needs valid audio re-upload)"
-  },
-  {
     "id": "2026-the-art-of-following-the-vision-of-your-local-church-the-art-of-following-the-vision-of-your-local-church-track-6",
     "title": "The Art of Following the Vision of your Local Church Track 6",
     "audioUrl": "https://archive.org/download/elgcc-teachings-2026/The%20Art%20of%20Following%20the%20Vision%20of%20your%20Local%20Church%20Track%206.mp3",
@@ -11681,5 +11657,25 @@
     "speaker": "Stephen Tijesuni Oyagbile",
     "archiveItem": "elgcc-teachings-2026",
     "uploadedAt": "2026-11-18T06:16:37.999879+00:00"
+  },
+  {
+    "id": "2026-spiritual-intelligence-the-art-of-flowing-with-the-spirit-spiritual-intelligence-the-art-of-flowing-with-the-spirit-track-3",
+    "title": "Spiritual Intelligence (The Art of Flowing with the Spirit) - Track 3",
+    "audioUrl": "https://archive.org/download/elgcc-teachings-2026/Spiritual%20Intelligence%20%28The%20Art%20of%20Flowing%20with%20the%20Spirit%29%20-%20Track%203.mp3",
+    "series": "Spiritual Intelligence (The Art of Flowing with the Spirit)",
+    "year": 2026,
+    "speaker": "Stephen Tijesuni Oyagbile",
+    "archiveItem": "elgcc-teachings-2026",
+    "uploadedAt": "2026-11-18T08:32:25.030695+00:00"
+  },
+  {
+    "id": "2026-spiritual-intelligence-the-art-of-flowing-with-the-spirit-spiritual-intelligence-the-art-of-flowing-with-the-spirit-track-2",
+    "title": "Spiritual Intelligence (The Art of Flowing with the Spirit) - Track 2",
+    "audioUrl": "https://archive.org/download/elgcc-teachings-2026/Spiritual%20Intelligence%20%28The%20Art%20of%20Flowing%20with%20the%20Spirit%29%20-%20Track%202.mp3",
+    "series": "Spiritual Intelligence (The Art of Flowing with the Spirit)",
+    "year": 2026,
+    "speaker": "Stephen Tijesuni Oyagbile",
+    "archiveItem": "elgcc-teachings-2026",
+    "uploadedAt": "2026-11-18T08:33:02.706539+00:00"
   }
 ]
