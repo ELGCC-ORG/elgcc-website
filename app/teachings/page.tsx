@@ -62,6 +62,11 @@ function getSeriesAccentLine(series: string) {
 
 const LIBRARY_PAGE_SIZE = 24;
 
+function getTrackNumber(title: string): number {
+  const match = title.match(/(?:track|part)\s*(\d+)/i);
+  return match ? parseInt(match[1], 10) : 999;
+}
+
 function groupSermons(items: IndexedSermon[]) {
   const groups = new Map<string, SeriesGroup>();
 
@@ -84,6 +89,16 @@ function groupSermons(items: IndexedSermon[]) {
       count: 1,
     });
   }
+
+  // Ensure tracks inside every series are always ordered chronologically (Track 1, Track 2...)
+  groups.forEach((group) => {
+    group.sermons.sort((a, b) => {
+      const trackA = getTrackNumber(a.title);
+      const trackB = getTrackNumber(b.title);
+      if (trackA !== trackB) return trackA - trackB;
+      return a.originalIndex - b.originalIndex;
+    });
+  });
 
   return Array.from(groups.values()).sort((a, b) => {
     if (b.year !== a.year) return b.year - a.year;

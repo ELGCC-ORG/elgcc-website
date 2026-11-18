@@ -11656,7 +11656,9 @@
     "year": 2026,
     "speaker": "Stephen Tijesuni Oyagbile",
     "archiveItem": "elgcc-teachings-2026",
-    "uploadedAt": "2026-11-18T06:15:37.733858+00:00"
+    "uploadedAt": "2026-11-18T06:15:37.733858+00:00",
+    "unavailable": true,
+    "unavailableReason": "Archive.org audio file is 0 bytes (needs valid audio re-upload)"
   },
   {
     "id": "2026-spiritual-intelligence-the-art-of-flowing-with-the-spirit-track-1-supernatural-intelligence-track-3",
@@ -11666,7 +11668,9 @@
     "year": 2026,
     "speaker": "Stephen Tijesuni Oyagbile",
     "archiveItem": "elgcc-teachings-2026",
-    "uploadedAt": "2026-11-18T06:15:49.228194+00:00"
+    "uploadedAt": "2026-11-18T06:15:49.228194+00:00",
+    "unavailable": true,
+    "unavailableReason": "Archive.org audio file is 0 bytes (needs valid audio re-upload)"
   },
   {
     "id": "2026-the-art-of-following-the-vision-of-your-local-church-the-art-of-following-the-vision-of-your-local-church-track-6",

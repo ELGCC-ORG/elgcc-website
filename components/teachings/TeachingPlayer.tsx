@@ -211,6 +211,10 @@ export default function TeachingPlayer({
           }
         }}
         onWaiting={() => setIsLoading(true)}
+        onError={() => {
+          setIsLoading(false);
+          setIsPlaying(false);
+        }}
         onPlaying={() => {
           setIsLoading(false);
           setIsPlaying(true);
