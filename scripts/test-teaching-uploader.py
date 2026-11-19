@@ -96,6 +96,18 @@ def run():
         current["unavailable"] = True
         check(uploader.review_uploads(entries[:1], [current]) == ["Restore existing"], "Unavailable teaching was not recognized for restoration.")
 
+        empty_file = Path(folder) / "Empty.mp3"
+        empty_file.write_bytes(b"")
+        bad_entries = [
+            uploader.UploadEntry(empty_file, "Empty Track", "Open Doors", 2026, uploader.DEFAULT_SPEAKER),
+            uploader.UploadEntry(first, "Fire from Prayers - Track 1", "Training of the Spirit 2023", 2026, uploader.DEFAULT_SPEAKER),
+            uploader.UploadEntry(second, "LIFE IN CHRIST CONFERENCE 2021 TRACK 1", "Life In Christ Conference", 2026, uploader.DEFAULT_SPEAKER),
+        ]
+        bad_statuses = uploader.review_uploads(bad_entries, [])
+        check(bad_statuses[0] == "Empty audio file (0 bytes)", f"0-byte file not blocked: {bad_statuses[0]}")
+        check(bad_statuses[1] == "Year mismatch: series says 2023", f"Series year mismatch not blocked: {bad_statuses[1]}")
+        check(bad_statuses[2] == "Year mismatch: title says 2021", f"Title year mismatch not blocked: {bad_statuses[2]}")
+
     print("Teaching uploader checks passed.")
 
 

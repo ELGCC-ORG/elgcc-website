@@ -75,6 +75,30 @@ function validate() {
     const audioKey = audioUrl.toLowerCase();
     const archiveKey = archiveFileName(audioUrl);
 
+    if (!sermon.unavailable && Number.isInteger(year)) {
+      const seriesYears = Array.from(
+        new Set((series.match(/\b(201\d|202\d|203\d)\b/g) || []).map(Number))
+      );
+      if (seriesYears.length > 0 && !seriesYears.includes(year)) {
+        errors.push(`${label}: year (${year}) mismatches year in series "${series}".`);
+      }
+
+      const titleYears = Array.from(
+        new Set((title.match(/\b(201\d|202\d|203\d)\b/g) || []).map(Number))
+      );
+      const mismatchedTitleYears = titleYears.filter((y) => y !== year);
+      if (titleYears.length > 0 && mismatchedTitleYears.length === titleYears.length) {
+        const isJanRollover =
+          /\bjan(?:uary)?\b/i.test(title) &&
+          mismatchedTitleYears.some((y) => Math.abs(y - year) === 1);
+        if (isJanRollover) {
+          warnings.push(`${label}: January rollover year in title "${title}" under ${year} series.`);
+        } else {
+          errors.push(`${label}: year (${year}) mismatches year in title "${title}".`);
+        }
+      }
+    }
+
     for (const [map, key, description] of [
       [ids, id, 'id'],
       [audioUrls, audioKey, 'audioUrl'],

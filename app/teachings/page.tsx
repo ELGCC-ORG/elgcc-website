@@ -483,17 +483,9 @@ function TeachingsContent() {
           <header className="grid grid-cols-1 lg:grid-cols-[1.08fr_0.92fr] gap-8 lg:gap-12 items-center">
             {/* Left Copy & CTAs */}
             <div>
-              <p
-                className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] ${
-                  isLight ? 'text-[#777777]' : 'text-white/50'
-                }`}
-              >
-                ETERNAL LIFE GLOBAL COMMUNITY CHURCH · MEDIA
-              </p>
-
-              <h1 className="mt-3 text-4xl sm:text-5xl lg:text-[54px] font-extrabold tracking-tight leading-[1.06] text-balance">
-                The Word of God,{' '}
-                <span className="text-primary">on the go.</span>
+              <h1 className="text-3xl sm:text-4xl lg:text-[46px] font-extrabold tracking-tight leading-[1.1] text-balance">
+                Welcome to Eternal Life Global Community Church{' '}
+                <span className="text-primary">Media.</span>
               </h1>
 
               <p
@@ -501,7 +493,7 @@ function TeachingsContent() {
                   isLight ? 'text-[#555555]' : 'text-white/65'
                 }`}
               >
-                Every message recorded and released from our meetings, conferences, crusades, and fasting series by Pastor Stephen Tijesuni Oyagbile. Stream online or download free.
+                You can stream online or download free.
               </p>
 
               <div className="mt-6 grid grid-cols-2 sm:flex sm:items-center gap-3">

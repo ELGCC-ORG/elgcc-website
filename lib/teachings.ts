@@ -566,8 +566,8 @@ export function buildSeriesGroups(items: Sermon[]): SeriesGroup[] {
   });
 
   return result.sort((a, b) => {
-    if (b.latestTimestamp !== a.latestTimestamp) return b.latestTimestamp - a.latestTimestamp;
     if (b.year !== a.year) return b.year - a.year;
+    if (b.latestTimestamp !== a.latestTimestamp) return b.latestTimestamp - a.latestTimestamp;
     if (b.count !== a.count) return b.count - a.count;
     return a.displaySeries.localeCompare(b.displaySeries);
   });

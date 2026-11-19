@@ -250,20 +250,18 @@ export default function TeachingPlayer({
         </div>
 
         <div
-          className={`border-t px-3 py-2.5 backdrop-blur-md sm:px-6 sm:py-3.5 transition-colors ${
-            isLight
-              ? 'border-black/10 bg-white/95 text-[#141414] shadow-[0_-12px_40px_rgba(0,0,0,0.08)]'
-              : 'border-white/10 bg-[#161616]/95 text-white shadow-2xl'
-          }`}
+          className={`border-t px-3 py-2.5 backdrop-blur-md sm:px-6 sm:py-3.5 transition-colors ${isLight
+            ? 'border-black/10 bg-white/95 text-[#141414] shadow-[0_-12px_40px_rgba(0,0,0,0.08)]'
+            : 'border-white/10 bg-[#161616]/95 text-white shadow-2xl'
+            }`}
         >
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-6">
             {/* Left: Series Artwork & Sermon Info */}
             <div className="flex min-w-0 flex-1 items-center gap-3 md:flex-initial md:w-72 lg:w-80">
               {/* Real Series Mini Artwork */}
               <div
-                className={`relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border shadow-sm ${
-                  isLight ? 'border-black/10' : 'border-white/10'
-                }`}
+                className={`relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border shadow-sm ${isLight ? 'border-black/10' : 'border-white/10'
+                  }`}
               >
                 <SeriesArtwork
                   seriesTitle={sermon.series}
@@ -284,9 +282,8 @@ export default function TeachingPlayer({
               {/* Title & Series */}
               <div className="min-w-0 flex-1">
                 <h4
-                  className={`truncate text-xs sm:text-sm font-bold tracking-wide ${
-                    isLight ? 'text-[#141414]' : 'text-white'
-                  }`}
+                  className={`truncate text-xs sm:text-sm font-bold tracking-wide ${isLight ? 'text-[#141414]' : 'text-white'
+                    }`}
                   title={title}
                 >
                   {title}
@@ -301,13 +298,12 @@ export default function TeachingPlayer({
                 <button
                   type="button"
                   onClick={() => onToggleSave(sermon.id)}
-                  className={`hidden sm:flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                    isSaved
-                      ? 'text-red-500 hover:text-red-400'
-                      : isLight
-                        ? 'text-black/35 hover:text-[#141414]'
-                        : 'text-white/40 hover:text-white'
-                  }`}
+                  className={`hidden sm:flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${isSaved
+                    ? 'text-red-500 hover:text-red-400'
+                    : isLight
+                      ? 'text-black/35 hover:text-[#141414]'
+                      : 'text-white/40 hover:text-white'
+                    }`}
                   title={isSaved ? 'Remove from saved' : 'Save to My Library'}
                   aria-label="Save teaching"
                 >
@@ -327,9 +323,8 @@ export default function TeachingPlayer({
                   type="button"
                   onClick={onPrev}
                   disabled={!hasPrev}
-                  className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-full transition-colors disabled:opacity-30 ${
-                    isLight ? 'text-[#555555] hover:text-[#111111]' : 'text-white/60 hover:text-white'
-                  }`}
+                  className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-full transition-colors disabled:opacity-30 ${isLight ? 'text-[#555555] hover:text-[#111111]' : 'text-white/60 hover:text-white'
+                    }`}
                   title="Previous message"
                   aria-label="Previous track"
                 >
@@ -342,9 +337,8 @@ export default function TeachingPlayer({
                 <button
                   type="button"
                   onClick={() => handleSkip(-15)}
-                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-95 ${
-                    isLight ? 'text-[#444444] hover:text-[#111111]' : 'text-white/70 hover:text-white'
-                  }`}
+                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-95 ${isLight ? 'text-[#444444] hover:text-[#111111]' : 'text-white/70 hover:text-white'
+                    }`}
                   title="Rewind 15 seconds"
                   aria-label="Rewind 15 seconds"
                 >
@@ -381,9 +375,8 @@ export default function TeachingPlayer({
                 <button
                   type="button"
                   onClick={() => handleSkip(15)}
-                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-95 ${
-                    isLight ? 'text-[#444444] hover:text-[#111111]' : 'text-white/70 hover:text-white'
-                  }`}
+                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-95 ${isLight ? 'text-[#444444] hover:text-[#111111]' : 'text-white/70 hover:text-white'
+                    }`}
                   title="Forward 15 seconds"
                   aria-label="Forward 15 seconds"
                 >
@@ -398,9 +391,8 @@ export default function TeachingPlayer({
                   type="button"
                   onClick={onNext}
                   disabled={!hasNext}
-                  className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-full transition-colors disabled:opacity-30 ${
-                    isLight ? 'text-[#555555] hover:text-[#111111]' : 'text-white/60 hover:text-white'
-                  }`}
+                  className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-full transition-colors disabled:opacity-30 ${isLight ? 'text-[#555555] hover:text-[#111111]' : 'text-white/60 hover:text-white'
+                    }`}
                   title="Next message in series"
                   aria-label="Next track"
                 >
@@ -437,11 +429,10 @@ export default function TeachingPlayer({
               <button
                 type="button"
                 onClick={cycleSpeed}
-                className={`flex h-8 items-center rounded-lg border px-2 text-[11px] font-bold transition-colors active:scale-95 ${
-                  isLight
-                    ? 'border-black/15 bg-black/[0.03] text-[#333333] hover:border-primary hover:text-primary'
-                    : 'border-white/10 bg-white/5 text-white/80 hover:border-primary/50 hover:text-primary'
-                }`}
+                className={`flex h-8 items-center rounded-lg border px-2 text-[11px] font-bold transition-colors active:scale-95 ${isLight
+                  ? 'border-black/15 bg-black/[0.03] text-[#333333] hover:border-primary hover:text-primary'
+                  : 'border-white/10 bg-white/5 text-white/80 hover:border-primary/50 hover:text-primary'
+                  }`}
                 title="Change playback speed"
               >
                 {playbackRate}x
@@ -452,9 +443,8 @@ export default function TeachingPlayer({
                 <button
                   type="button"
                   onClick={toggleMute}
-                  className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                    isLight ? 'text-[#555555] hover:text-[#111111]' : 'text-white/60 hover:text-white'
-                  }`}
+                  className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${isLight ? 'text-[#555555] hover:text-[#111111]' : 'text-white/60 hover:text-white'
+                    }`}
                   title={isMuted ? 'Unmute' : 'Mute'}
                 >
                   {isMuted || volume === 0 ? (
@@ -475,9 +465,8 @@ export default function TeachingPlayer({
                   step={0.05}
                   value={isMuted ? 0 : volume}
                   onChange={handleVolumeChange}
-                  className={`h-1 w-16 cursor-pointer accent-primary rounded-full ${
-                    isLight ? 'bg-black/15' : 'bg-white/20'
-                  }`}
+                  className={`h-1 w-16 cursor-pointer accent-primary rounded-full ${isLight ? 'bg-black/15' : 'bg-white/20'
+                    }`}
                   aria-label="Volume slider"
                 />
               </div>
@@ -487,11 +476,10 @@ export default function TeachingPlayer({
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
-                  isLight
-                    ? 'border-black/10 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white'
-                    : 'border-white/10 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white'
-                }`}
+                className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${isLight
+                  ? 'border-black/10 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+                  : 'border-white/10 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white'
+                  }`}
                 title="Share this teaching to WhatsApp"
                 aria-label="Share on WhatsApp"
               >
@@ -504,11 +492,10 @@ export default function TeachingPlayer({
               <a
                 href={sermon.audioUrl}
                 download
-                className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
-                  isLight
-                    ? 'border-black/10 text-[#555555] hover:border-primary hover:text-primary'
-                    : 'border-white/10 text-white/60 hover:border-primary/40 hover:text-white'
-                }`}
+                className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${isLight
+                  ? 'border-black/10 text-[#555555] hover:border-primary hover:text-primary'
+                  : 'border-white/10 text-white/60 hover:border-primary/40 hover:text-white'
+                  }`}
                 title="Download MP3"
                 aria-label={`Download ${title}`}
               >
@@ -521,11 +508,10 @@ export default function TeachingPlayer({
               <button
                 type="button"
                 onClick={copyLink}
-                className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
-                  isLight
-                    ? 'border-black/10 text-[#555555] hover:border-primary hover:text-primary'
-                    : 'border-white/10 text-white/60 hover:border-primary/40 hover:text-white'
-                }`}
+                className={`hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${isLight
+                  ? 'border-black/10 text-[#555555] hover:border-primary hover:text-primary'
+                  : 'border-white/10 text-white/60 hover:border-primary/40 hover:text-white'
+                  }`}
                 title={copied ? 'Link copied!' : 'Copy sermon link'}
                 aria-label="Copy link"
               >
@@ -543,11 +529,10 @@ export default function TeachingPlayer({
               <button
                 type="button"
                 onClick={onClose}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                  isLight
-                    ? 'text-[#666666] hover:bg-black/5 hover:text-[#111111]'
-                    : 'text-white/40 hover:bg-white/10 hover:text-white'
-                }`}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${isLight
+                  ? 'text-[#666666] hover:bg-black/5 hover:text-[#111111]'
+                  : 'text-white/40 hover:bg-white/10 hover:text-white'
+                  }`}
                 title="Close player"
                 aria-label="Close player"
               >

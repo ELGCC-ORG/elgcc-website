@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -182,6 +183,10 @@ def valid_year(value):
     return year if 1900 <= year <= 2200 else None
 
 
+def extract_years(text):
+    return [int(year) for year in re.findall(r"\b(201\d|202\d|203\d)\b", str(text or ""))]
+
+
 @dataclass
 class UploadEntry:
     path: Path
@@ -202,6 +207,9 @@ def review_uploads(entries, existing):
         if not entry.path.is_file():
             statuses.append("File missing")
             continue
+        if entry.path.stat().st_size == 0:
+            statuses.append("Empty audio file (0 bytes)")
+            continue
         if entry.path.suffix.lower() not in ALLOWED_EXTENSIONS:
             statuses.append("Unsupported file")
             continue
@@ -213,6 +221,15 @@ def review_uploads(entries, existing):
             continue
         if not normalize_text(entry.series):
             statuses.append("Add series")
+            continue
+
+        series_years = extract_years(entry.series)
+        if series_years and int(entry.year) not in series_years:
+            statuses.append(f"Year mismatch: series says {series_years[0]}")
+            continue
+        title_years = extract_years(entry.title)
+        if title_years and int(entry.year) not in title_years:
+            statuses.append(f"Year mismatch: title says {title_years[0]}")
             continue
 
         clean_name = safe_file_name(entry.title, entry.path.suffix)
